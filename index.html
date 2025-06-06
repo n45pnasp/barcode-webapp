@@ -69,7 +69,14 @@
         const bandaraMaskapai = parts[3];
         const bandaraAsal = bandaraMaskapai.slice(0, 3);
         const bandaraTujuan = bandaraMaskapai.slice(3, 6);
-        const maskapai = bandaraMaskapai.slice(6);
+        const maskapaiCode = bandaraMaskapai.slice(6);
+
+        let maskapai = maskapaiCode;
+        if (maskapaiCode === "IU") {
+          maskapai = "SUPER AIR JET IU";
+        } else if (maskapaiCode === "ID") {
+          maskapai = "BATIK AIR ID";
+        }
 
         const nomorPenerbangan = parts[4];
         const noKursiSource = parts[5];
