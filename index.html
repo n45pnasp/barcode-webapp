@@ -113,9 +113,10 @@
 
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
-        const namaEndIndex = text.indexOf(" ", 2);
-        const namaRaw = text.substring(2, namaEndIndex);
-        const [lastName, firstNames] = namaRaw.split("/");
+        const parts = text.split(" ");
+        const namaRaw = parts[0].substring(2); // ambil setelah M1
+        const [lastName, ...firstNamesArr] = namaRaw.split("/");
+        const firstNames = firstNamesArr.join(" ");
         const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
 
         const parts = text.split(" ");
