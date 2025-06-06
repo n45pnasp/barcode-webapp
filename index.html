@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Barcode Scanner Boarding Pass Avsec</title>
+  <title>📷 Barcode Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     * {
       box-sizing: border-box;
@@ -14,80 +14,67 @@
     }
     body {
       font-family: 'Inter', sans-serif;
-      background: #eef2f7;
+      background: linear-gradient(135deg, #f4f6f9, #e9edf2);
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      flex-direction: column;
       padding: 20px;
       color: #333;
     }
     h1 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #5a5a5a;
-    }
-    .card {
-      background: #f1f3f6;
-      border-radius: 24px;
-      box-shadow:
-        8px 8px 20px #cbd2d9,
-        -8px -8px 20px #ffffff;
-      padding: 20px;
-      width: 90%;
-      max-width: 360px;
-      text-align: center;
-      margin-bottom: 20px;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
     }
     video {
       width: 100%;
-      border-radius: 16px;
-      margin-bottom: 20px;
-      box-shadow:
-        inset 4px 4px 8px #d1d9e6,
-        inset -4px -4px 8px #ffffff;
-    }
-    .output-box {
-      background: #f1f3f6;
-      padding: 16px;
+      max-width: 360px;
       border-radius: 20px;
-      box-shadow:
-        4px 4px 10px #cbd2d9,
-        -4px -4px 10px #ffffff;
-      font-size: 0.95rem;
-      color: #333;
-      font-weight: 500;
-      white-space: pre-line;
-      margin-bottom: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .label {
-      font-size: 0.8rem;
-      color: #888;
-      margin-bottom: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .text {
+      font-size: 1rem;
+      white-space: pre-line;
     }
   </style>
 </head>
 <body>
+  <h1>📷 Barcode Scanner</h1>
+  <video id="video" autoplay></video>
+
   <div class="card">
-    <h1>📷 Barcode Scanner</h1>
-    <video id="video" autoplay></video>
-
     <div class="label">Hasil Mentah:</div>
-    <div id="raw-output" class="output-box">...</div>
-
-    <div class="label">Hasil Parsing:</div>
-    <div id="parsed-output" class="output-box">Scan result will appear here...</div>
+    <div class="text" id="rawOutput">Menunggu scan...</div>
   </div>
 
-  <!-- Audio beep -->
+  <div class="card">
+    <div class="label">Hasil Parsing:</div>
+    <div class="text" id="parsedOutput">-</div>
+  </div>
+
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
     const video = document.getElementById('video');
-    const rawOutput = document.getElementById('raw-output');
-    const parsedOutput = document.getElementById('parsed-output');
+    const rawOutput = document.getElementById('rawOutput');
+    const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -98,29 +85,37 @@
       setTimeout(() => beepSound.play(), 300);
     }
 
+    function julianToDate(julianDay, year) {
+      const date = new Date(year, 0); // Jan 1
+      date.setDate(julianDay);
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
     function parseBarcode(text) {
       if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
         const parts = text.split(" ");
         const nama = "NOVAN ANDRIAN PUTRO";
-
         const bandaraMaskapai = parts[3];
         const bandaraAsal = bandaraMaskapai.slice(0, 3);
         const bandaraTujuan = bandaraMaskapai.slice(3, 6);
         const maskapaiCode = bandaraMaskapai.slice(6);
-
-        let maskapai = maskapaiCode;
-        if (maskapaiCode === "IU") {
-          maskapai = "SUPER AIR JET IU";
-        } else if (maskapaiCode === "ID") {
-          maskapai = "BATIK AIR ID";
-        }
-
         const nomorPenerbangan = parts[4];
         const noKursiSource = parts[5];
         const noKursi = noKursiSource.substring(4, 8);
+        const julianDateRaw = parts[5].substring(0, 3);
+        const tahun = new Date().getFullYear();
+        const tanggal = julianToDate(parseInt(julianDateRaw), tahun);
+
+        let maskapai = maskapaiCode;
+        if (maskapaiCode === "IU") maskapai = "SUPER AIR JET IU";
+        else if (maskapaiCode === "ID") maskapai = "BATIK AIR ID";
 
         const penerbangan = `${bandaraAsal} to ${bandaraTujuan} dengan ${maskapai} ${nomorPenerbangan}`;
-        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n💺 No Kursi: ${noKursi}`;
+        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n📅 Tanggal: ${tanggal}\n💺 No Kursi: ${noKursi}`;
       }
       return `✅ Detected: ${text}`;
     }
@@ -144,7 +139,7 @@
           });
         })
         .catch(err => {
-          parsedOutput.textContent = `❌ Cannot access camera: ${err.message}`;
+          rawOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
     }
 
