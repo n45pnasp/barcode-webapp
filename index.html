@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📷 Barcode Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -114,13 +114,17 @@
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
         const parts = text.split(" ");
-        const namaRaw = parts[0].substring(2); // ambil setelah M1
-        const [lastName, ...firstNamesArr] = namaRaw.split("/");
-        const firstNames = firstNamesArr.join(" ");
-        const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
-
-        const parts = text.split(" ");
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
+
+        // Parsing nama lengkap (lastName dan first names bisa lebih dari satu kata)
+        const namaRaw = parts[0].substring(2); // setelah "M1"
+        const [lastName, ...firstNamesArr] = namaRaw.split("/");
+        // Gabungkan firstNamesArr + bagian nama depan yang ada di parts[1], parts[2] jika perlu
+        // Biasanya parts[1] sampai sebelum kode rute adalah bagian nama depan (contoh "NOVAN ANDRIAN")
+        // Jadi kita ambil semua parts dari index 1 sampai sebelum index 3 (karena parts[3] adalah kode rute)
+        const additionalFirstNames = parts.slice(1, 3); // ambil index 1 dan 2
+        const firstNamesFull = [...firstNamesArr, ...additionalFirstNames].join(" ").replace(/_/g, " ");
+        const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
 
         const ruteMaskapai = parts[3];
         const asal = ruteMaskapai.slice(0, 3);
@@ -152,12 +156,16 @@
       const waktu = new Date();
       const jam = waktu.toLocaleTimeString('id-ID');
 
-      const namaEndIndex = rawText.indexOf(" ", 2);
-      const namaRaw = rawText.substring(2, namaEndIndex);
-      const [lastName, firstNames] = namaRaw.split("/");
-      const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
-
+      // Parsing nama lengkap dengan logika sama seperti di parseBarcode()
       const parts = rawText.split(" ");
+      if(parts.length < 6) return; // safety check
+
+      const namaRaw = parts[0].substring(2);
+      const [lastName, ...firstNamesArr] = namaRaw.split("/");
+      const additionalFirstNames = parts.slice(1, 3);
+      const firstNamesFull = [...firstNamesArr, ...additionalFirstNames].join(" ").replace(/_/g, " ");
+      const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
+
       const ruteMaskapai = parts[3];
       const kodeMaskapai = ruteMaskapai.slice(6);
       const julian = parseInt(parts[5].substring(0, 3));
