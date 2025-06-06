@@ -55,11 +55,21 @@
   <video id="video" autoplay></video>
   <div id="output">Scan result will appear here...</div>
 
+  <!-- Audio bip -->
+  <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
   <script>
     const video = document.getElementById('video');
     const output = document.getElementById('output');
+    const beepSound = document.getElementById('beep-sound');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
+    let lastResult = '';
+
+    function playBeepTwice() {
+      beepSound.play();
+      setTimeout(() => beepSound.play(), 300);
+    }
 
     function parseBarcode(text) {
       if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
@@ -83,7 +93,6 @@
         const noKursi = noKursiSource.substring(4, 8);
 
         const penerbangan = `${bandaraAsal} to ${bandaraTujuan} dengan ${maskapai} ${nomorPenerbangan}`;
-
         return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n💺 No Kursi: ${noKursi}`;
       }
       return `✅ Detected: ${text}`;
@@ -97,8 +106,13 @@
           video.play();
           codeReader.decodeFromVideoDevice(null, video, (result, err) => {
             if (result) {
-              const parsed = parseBarcode(result.getText());
-              output.textContent = parsed;
+              const scannedText = result.getText();
+              if (scannedText !== lastResult) {
+                lastResult = scannedText;
+                const parsed = parseBarcode(scannedText);
+                output.textContent = parsed;
+                playBeepTwice();
+              }
             }
           });
         })
