@@ -64,9 +64,20 @@
       if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
         const parts = text.split(" ");
         const nama = "NOVAN ANDRIAN PUTRO";
-        const penerbangan = `${parts[3]} to ${parts[4]} dengan ${parts[5]} ${parts[6]}`;
 
-        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}`;
+        // Extract penerbangan info from combined string like BWXCGKIU
+        const bandaraMaskapai = parts[3];
+        const bandaraAsal = bandaraMaskapai.slice(0, 3);
+        const bandaraTujuan = bandaraMaskapai.slice(3, 6);
+        const maskapai = bandaraMaskapai.slice(6);
+
+        const nomorPenerbangan = parts[4];
+        const noKursiSource = parts[5];
+        const noKursi = noKursiSource.substring(4, 8);
+
+        const penerbangan = `${bandaraAsal} to ${bandaraTujuan} dengan ${maskapai} ${nomorPenerbangan}`;
+
+        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n💺 No Kursi: ${noKursi}`;
       }
       return `✅ Detected: ${text}`;
     }
