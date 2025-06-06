@@ -29,7 +29,7 @@
       margin-bottom: 20px;
       color: #2c3e50;
     }
-    video, canvas, img {
+    video {
       width: 100%;
       max-width: 400px;
       border-radius: 12px;
@@ -45,36 +45,42 @@
       color: #2ecc71;
       min-width: 280px;
       margin-bottom: 20px;
-    }
-    input[type="file"] {
-      margin-bottom: 20px;
+      white-space: pre-line;
     }
   </style>
 </head>
 <body>
   <h1>📷 Barcode Reader Web App</h1>
   <video id="video" autoplay></video>
-  <input type="file" id="upload" accept="image/*">
-  <img id="preview" style="display:none"/>
   <div id="output">Scan result will appear here...</div>
 
   <script>
     const video = document.getElementById('video');
     const output = document.getElementById('output');
-    const upload = document.getElementById('upload');
-    const preview = document.getElementById('preview');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
+
+    function parseBarcode(text) {
+      if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
+        const parts = text.split(" ");
+        const nama = "NOVAN ANDRIAN PUTRO";
+        const penerbangan = `${parts[3]} to ${parts[4]} dengan ${parts[5]} ${parts[6]}`;
+
+        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}`;
+      }
+      return `✅ Detected: ${text}`;
+    }
 
     function startCamera() {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(stream => {
           video.srcObject = stream;
-          video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+          video.setAttribute("playsinline", true);
           video.play();
           codeReader.decodeFromVideoDevice(null, video, (result, err) => {
             if (result) {
-              output.textContent = `✅ Detected from camera: ${result.getText()}`;
+              const parsed = parseBarcode(result.getText());
+              output.textContent = parsed;
             }
           });
         })
@@ -84,30 +90,6 @@
     }
 
     startCamera();
-
-    // Image file upload barcode reader
-    upload.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const imageUrl = URL.createObjectURL(file);
-      preview.src = imageUrl;
-      preview.style.display = 'block';
-
-      const img = await createImageBitmap(file);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      try {
-        const result = await codeReader.decodeFromCanvas(canvas);
-        output.textContent = `✅ Detected from image: ${result.getText()}`;
-      } catch (err) {
-        output.textContent = '❌ No barcode found in the image';
-      }
-    });
   </script>
 </body>
 </html>
