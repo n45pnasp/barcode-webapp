@@ -19,10 +19,7 @@
       padding: 20px;
       color: #333;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 16px;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
       max-width: 360px;
@@ -57,16 +54,18 @@
       display: inline-block;
       width: 130px;
     }
-    #toggleHistory {
-      float: right;
-      font-size: 0.85rem;
-      background: none;
-      border: none;
+    #historyCard {
+      display: block;
+    }
+    .toggle-button {
+      font-size: 0.9rem;
       color: #007bff;
       cursor: pointer;
+      float: right;
     }
-    #toggleHistory:hover {
-      text-decoration: underline;
+    .history-item {
+      margin-bottom: 8px;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -79,12 +78,11 @@
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <div class="card">
-    <div class="label">
-      📝 History Scan
-      <button id="toggleHistory">Sembunyikan</button>
+  <div class="card" id="historyCard">
+    <div class="label">📝 History Scan
+      <span class="toggle-button" onclick="toggleHistory()">Sembunyikan</span>
     </div>
-    <div class="text" id="historyList">Belum ada scan.</div>
+    <div id="historyList"></div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -94,12 +92,10 @@
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
     const historyList = document.getElementById('historyList');
-    const toggleButton = document.getElementById('toggleHistory');
+    const historyCard = document.getElementById('historyCard');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
-    let scanHistory = [];
-    let historyVisible = true;
 
     function playBeepTwice() {
       beepSound.play();
@@ -118,8 +114,9 @@
 
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
-        const namaEndIndex = text.indexOf("/");
-        const nama = text.substring(2, namaEndIndex).replace(/_/g, " ");
+        const namaEndIndex = text.indexOf(" ", 2);
+        const namaRaw = text.substring(2, namaEndIndex);
+        const nama = namaRaw.replace(/_/g, " ");
 
         const parts = text.split(" ");
         if (parts.length < 6) {
@@ -152,21 +149,33 @@
       return `✅ Detected: ${text}`;
     }
 
-    function addToHistory(parsedText, rawText) {
-      const timestamp = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      let ringkasan = rawText;
-      const namaEndIndex = rawText.indexOf("/");
-      if (rawText.startsWith("M1") && namaEndIndex !== -1) {
-        const nama = rawText.substring(2, namaEndIndex).replace(/_/g, " ");
-        const parts = rawText.split(" ");
-        const maskapai = parts[3]?.slice(6) || "-";
-        const julian = parseInt(parts[5]?.substring(0, 3)) || 0;
-        const tanggal = julian ? julianToDate(julian, new Date().getFullYear()) : "-";
-        ringkasan = `👤 ${nama} | ✈️ ${maskapai} | 📅 ${tanggal}`;
+    function addToHistory(rawText) {
+      const waktu = new Date();
+      const jam = waktu.toLocaleTimeString('id-ID');
+
+      const namaEndIndex = rawText.indexOf(" ", 2);
+      const nama = rawText.substring(2, namaEndIndex).replace(/_/g, " ");
+
+      const parts = rawText.split(" ");
+      const ruteMaskapai = parts[3];
+      const kodeMaskapai = ruteMaskapai.slice(6);
+      const julian = parseInt(parts[5].substring(0, 3));
+      const tanggal = julianToDate(julian, new Date().getFullYear());
+
+      const historyItem = document.createElement("div");
+      historyItem.className = "history-item";
+      historyItem.innerHTML = `• ${jam} — 👤 ${nama} | ✈️ ${kodeMaskapai} | 📅 ${tanggal}`;
+      historyList.prepend(historyItem);
+    }
+
+    function toggleHistory() {
+      if (historyList.style.display === "none") {
+        historyList.style.display = "block";
+        document.querySelector('.toggle-button').innerText = "Sembunyikan";
+      } else {
+        historyList.style.display = "none";
+        document.querySelector('.toggle-button').innerText = "Tampilkan";
       }
-      scanHistory.unshift(`${timestamp} — ${ringkasan}`);
-      if (scanHistory.length > 10) scanHistory.pop();
-      historyList.innerHTML = scanHistory.map(item => `• ${item}`).join('<br>');
     }
 
     function startCamera() {
@@ -180,10 +189,9 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                const hasilParse = parseBarcode(scannedText);
-                parsedOutput.innerHTML = hasilParse;
+                parsedOutput.innerHTML = parseBarcode(scannedText);
+                addToHistory(scannedText);
                 playBeepTwice();
-                addToHistory(hasilParse, scannedText);
               }
             }
           });
@@ -192,12 +200,6 @@
           parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
     }
-
-    toggleButton.addEventListener('click', () => {
-      historyVisible = !historyVisible;
-      historyList.style.display = historyVisible ? 'block' : 'none';
-      toggleButton.textContent = historyVisible ? 'Sembunyikan' : 'Lihat';
-    });
 
     startCamera();
   </script>
