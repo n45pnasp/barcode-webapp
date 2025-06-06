@@ -29,7 +29,7 @@
       margin-bottom: 20px;
       color: #2c3e50;
     }
-    video {
+    video, canvas, img {
       width: 100%;
       max-width: 400px;
       border-radius: 12px;
@@ -44,26 +44,59 @@
       font-size: 1rem;
       color: #2ecc71;
       min-width: 280px;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
   <h1>📷 Barcode Reader Web App</h1>
   <video id="video" autoplay></video>
+  <input type="file" id="upload" accept="image/*">
+  <img id="preview" style="display:none"/>
   <div id="output">Scan result will appear here...</div>
 
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const videoElement = document.getElementById('video');
     const output = document.getElementById('output');
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
 
+    // Video scanner
     codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
       if (result) {
-        output.textContent = `✅ Detected: ${result.text}`;
+        output.textContent = `✅ Detected from camera: ${result.text}`;
       }
       if (err && !(err instanceof ZXing.NotFoundException)) {
         console.error(err);
         output.textContent = `⚠️ Error: ${err}`;
+      }
+    });
+
+    // Image scanner
+    upload.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const imageUrl = URL.createObjectURL(file);
+      preview.src = imageUrl;
+      preview.style.display = 'block';
+
+      const img = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      try {
+        const result = await codeReader.decodeFromCanvas(canvas);
+        output.textContent = `✅ Detected from image: ${result.text}`;
+      } catch (err) {
+        output.textContent = '❌ No barcode found in the image';
       }
     });
   </script>
