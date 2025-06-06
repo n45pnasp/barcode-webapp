@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcode Reader Web App</title>
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    #output {
+      background-color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      font-size: 1rem;
+      color: #2ecc71;
+      min-width: 280px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📷 Barcode Reader Web App</h1>
+  <video id="video" autoplay></video>
+  <div id="output">Scan result will appear here...</div>
+
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const output = document.getElementById('output');
+
+    codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+      if (result) {
+        output.textContent = `✅ Detected: ${result.text}`;
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error(err);
+        output.textContent = `⚠️ Error: ${err}`;
+      }
+    });
+  </script>
+</body>
+</html>
