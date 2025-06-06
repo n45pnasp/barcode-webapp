@@ -13,9 +13,8 @@
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
+      align-items: center;
       padding: 20px;
       color: #333;
     }
@@ -54,22 +53,23 @@
       display: inline-block;
       width: 130px;
     }
-    #historyCard {
-      display: block;
+    #historyContainer {
+      display: none;
     }
-    .toggle-button {
+    .toggle-btn {
       font-size: 0.9rem;
       color: #007bff;
       cursor: pointer;
       float: right;
     }
     .history-item {
-      margin-bottom: 8px;
       font-size: 0.95rem;
+      margin-top: 6px;
     }
   </style>
 </head>
 <body>
+
   <h1>📷 Barcode Scanner</h1>
   <video id="video" autoplay></video>
 
@@ -78,11 +78,13 @@
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <div class="card" id="historyCard">
+  <div class="card">
     <div class="label">📝 History Scan
-      <span class="toggle-button" onclick="toggleHistory()">Sembunyikan</span>
+      <span class="toggle-btn" id="toggleHistory">Tampilkan</span>
     </div>
-    <div id="historyList"></div>
+    <div id="historyContainer">
+      <div id="historyList"></div>
+    </div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -92,7 +94,8 @@
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
     const historyList = document.getElementById('historyList');
-    const historyCard = document.getElementById('historyCard');
+    const historyContainer = document.getElementById('historyContainer');
+    const toggleHistory = document.getElementById('toggleHistory');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
@@ -105,23 +108,18 @@
     function julianToDate(julianDay, year) {
       const date = new Date(year, 0);
       date.setDate(julianDay);
-      return date.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
         const namaEndIndex = text.indexOf(" ", 2);
         const namaRaw = text.substring(2, namaEndIndex);
-        const nama = namaRaw.replace(/_/g, " ");
+        const [lastName, firstNames] = namaRaw.split("/");
+        const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
 
         const parts = text.split(" ");
-        if (parts.length < 6) {
-          return `❌ Format barcode tidak sesuai.`;
-        }
+        if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
         const ruteMaskapai = parts[3];
         const asal = ruteMaskapai.slice(0, 3);
@@ -139,7 +137,7 @@
         else if (kodeMaskapai === "ID") namaMaskapai = "BATIK AIR ID";
 
         return `
-✈️ <span>Nama</span>: ${nama}
+✈️ <span>Nama</span>: ${namaLengkap}
 🛫 <span>Rute</span>: ${asal} → ${tujuan}
 🛩️ <span>Maskapai</span>: ${namaMaskapai} ${nomorPenerbangan}
 📅 <span>Tanggal</span>: ${tanggal}
@@ -154,7 +152,9 @@
       const jam = waktu.toLocaleTimeString('id-ID');
 
       const namaEndIndex = rawText.indexOf(" ", 2);
-      const nama = rawText.substring(2, namaEndIndex).replace(/_/g, " ");
+      const namaRaw = rawText.substring(2, namaEndIndex);
+      const [lastName, firstNames] = namaRaw.split("/");
+      const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
 
       const parts = rawText.split(" ");
       const ruteMaskapai = parts[3];
@@ -164,17 +164,17 @@
 
       const historyItem = document.createElement("div");
       historyItem.className = "history-item";
-      historyItem.innerHTML = `• ${jam} — 👤 ${nama} | ✈️ ${kodeMaskapai} | 📅 ${tanggal}`;
+      historyItem.innerHTML = `• ${jam} — 👤 ${namaLengkap} | ✈️ ${kodeMaskapai} | 📅 ${tanggal}`;
       historyList.prepend(historyItem);
     }
 
-    function toggleHistory() {
-      if (historyList.style.display === "none") {
-        historyList.style.display = "block";
-        document.querySelector('.toggle-button').innerText = "Sembunyikan";
+    toggleHistory.onclick = () => {
+      if (historyContainer.style.display === "none") {
+        historyContainer.style.display = "block";
+        toggleHistory.textContent = "Sembunyikan";
       } else {
-        historyList.style.display = "none";
-        document.querySelector('.toggle-button').innerText = "Tampilkan";
+        historyContainer.style.display = "none";
+        toggleHistory.textContent = "Tampilkan";
       }
     }
 
@@ -190,8 +190,8 @@
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
                 parsedOutput.innerHTML = parseBarcode(scannedText);
-                addToHistory(scannedText);
                 playBeepTwice();
+                addToHistory(scannedText);
               }
             }
           });
