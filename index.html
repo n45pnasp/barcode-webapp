@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Reader Web App</title>
-  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * {
@@ -59,24 +59,33 @@
   <div id="output">Scan result will appear here...</div>
 
   <script>
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    const videoElement = document.getElementById('video');
+    const video = document.getElementById('video');
     const output = document.getElementById('output');
     const upload = document.getElementById('upload');
     const preview = document.getElementById('preview');
 
-    // Video scanner
-    codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-      if (result) {
-        output.textContent = `✅ Detected from camera: ${result.text}`;
-      }
-      if (err && !(err instanceof ZXing.NotFoundException)) {
-        console.error(err);
-        output.textContent = `⚠️ Error: ${err}`;
-      }
-    });
+    const codeReader = new ZXing.BrowserMultiFormatReader();
 
-    // Image scanner
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+          video.play();
+          codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+            if (result) {
+              output.textContent = `✅ Detected from camera: ${result.getText()}`;
+            }
+          });
+        })
+        .catch(err => {
+          output.textContent = `❌ Cannot access camera: ${err.message}`;
+        });
+    }
+
+    startCamera();
+
+    // Image file upload barcode reader
     upload.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -94,7 +103,7 @@
 
       try {
         const result = await codeReader.decodeFromCanvas(canvas);
-        output.textContent = `✅ Detected from image: ${result.text}`;
+        output.textContent = `✅ Detected from image: ${result.getText()}`;
       } catch (err) {
         output.textContent = '❌ No barcode found in the image';
       }
