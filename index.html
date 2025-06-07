@@ -134,23 +134,24 @@
       // Nama final = afterSlash + spasi + beforeSlash
       const nama = `${afterSlash} ${beforeSlash}`;
 
-      // Data 2 → route + maskapai code
-      // Hilangkan 2 huruf terakhir dari data2 (kode maskapai)
-      const routeNoCode = data2.slice(0, -2).replace(/ID/g, '');
-      const mid = Math.floor(routeNoCode.length / 2);
-      const route = `${routeNoCode.slice(0, mid)} → ${routeNoCode.slice(mid)}`;
+      // ROUTE
+      // Hilangkan 2 huruf dari belakang (kode maskapai)
+      // Buang "ID"
+      const routeRaw = data2.slice(0, -2).replace(/ID/g, '');
+      const mid = Math.floor(routeRaw.length / 2);
+      const route = `${routeRaw.slice(0, mid)} → ${routeRaw.slice(mid)}`;
 
-      // Maskapai dari 2 huruf terakhir data2
+      // MASKAPAI
       const kodeMaskapai = data2.slice(-2).toUpperCase();
       let maskapai = '';
       if (kodeMaskapai === 'UI') maskapai = 'SUPER AIR JET';
       else if (kodeMaskapai === 'ID') maskapai = 'BATIK AIR';
       else maskapai = kodeMaskapai;
 
-      // Data3 adalah flight number (kode 4 digit), yang ditampilkan sebagai seat
-      const seat = data3.substring(3, 8); // sesuai arahan sebelumnya
+      // SEAT
+      const seat = data4.substring(3, 8);
 
-      // Data4 adalah flight info yang mengandung tanggal Julian (3 digit pertama)
+      // TANGGAL
       const julianMatch = data4.match(/^(\d{3})/);
       const julianDay = julianMatch ? parseInt(julianMatch[1], 10) : null;
       const tahun = new Date().getFullYear();
