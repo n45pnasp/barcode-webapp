@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>📷 Barcode Boarding Pass Scanner</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -34,55 +34,53 @@
       max-width: 360px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-      white-space: pre-line;
-      font-size: 1rem;
-      line-height: 1.5;
     }
     .label {
+      font-size: 1rem;
       font-weight: 600;
       color: #4a4a4a;
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
-      font-size: 1rem;
     }
-    .history-button {
-      margin-top: 10px;
-      padding: 10px 16px;
+    .text {
+      font-size: 1rem;
+      white-space: pre-line;
+      line-height: 1.6;
+    }
+    .btn {
+      background: #4a90e2;
+      color: #fff;
       border: none;
+      padding: 10px 16px;
       border-radius: 10px;
-      background-color: #4a90e2;
-      color: white;
       font-weight: 600;
       cursor: pointer;
+      margin-bottom: 16px;
     }
-    .history-button:hover {
-      background-color: #357ABD;
+    .btn:hover {
+      background: #3f7fd2;
     }
-    #historySection {
+    #historyCard {
       display: none;
-      width: 100%;
-      max-width: 360px;
     }
   </style>
 </head>
 <body>
 
-  <h1>📷 Barcode Boarding Pass Scanner</h1>
+  <h1>📷 Boarding Pass Scanner</h1>
   <video id="video" autoplay></video>
 
   <div class="card">
     <div class="label">📄 Informasi Boarding Pass</div>
-    <div id="parsedOutput">Menunggu scan...</div>
+    <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <button class="history-button" onclick="toggleHistory()">📜 Lihat Riwayat Scan</button>
-  <div id="historySection">
-    <div class="card">
-      <div class="label">🕘 Riwayat Scan</div>
-      <div id="historyList">Belum ada scan.</div>
-    </div>
-    <button class="history-button" style="background-color: #e74c3c;" onclick="clearHistory()">🗑 Hapus Riwayat</button>
+  <button class="btn" onclick="toggleHistory()">📚 Tampilkan Riwayat Scan</button>
+
+  <div class="card" id="historyCard">
+    <div class="label">📜 Riwayat Scan</div>
+    <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -91,45 +89,39 @@
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
-    const historyList = document.getElementById('historyList');
-    const historySection = document.getElementById('historySection');
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    let lastResult = '';
+    const historyCard = document.getElementById('historyCard');
+    const scanHistoryText = document.getElementById('scanHistoryText');
 
     const airlineMap = {
       "ID": "BATIK AIR",
       "IU": "SUPER AIR JET",
       "QG": "CITILINK",
-      // Tambahkan lainnya sesuai kebutuhan
+      "GA": "GARUDA INDONESIA",
+      "JT": "LION AIR",
+      "IW": "WINGS AIR",
     };
 
-    function playBeepTwice() {
-      beepSound.play();
-      setTimeout(() => beepSound.play(), 300);
-    }
-
-    function splitFromBack(str, maxSplit) {
+    function splitFromBack(str, maxSplits) {
       const parts = [];
-      let remaining = str.trim();
-      for (let i = 0; i < maxSplit; i++) {
-        const lastSpace = remaining.lastIndexOf(' ');
+      let remaining = str;
+      for (let i = 0; i < maxSplits; i++) {
+        const lastSpace = remaining.lastIndexOf(" ");
         if (lastSpace === -1) break;
-        parts.unshift(remaining.substring(lastSpace + 1));
-        remaining = remaining.substring(0, lastSpace);
+        parts.unshift(remaining.slice(lastSpace + 1));
+        remaining = remaining.slice(0, lastSpace);
       }
       parts.unshift(remaining);
       return parts;
     }
 
     function julianToDate(julianDay, year) {
-      const date = new Date(year, 0, 1);
+      const date = new Date(year, 0);
       date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     function parseBoardingPass(data) {
       if (!data.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
-
       const parts = splitFromBack(data, 5);
       if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
@@ -144,64 +136,61 @@
         fullName = (part2 + " " + part1).replace(/_/g, ' ').trim();
       }
 
-      const tanggalRaw = parts[4].substring(0, 4);
-      const julianDay = parseInt(tanggalRaw.substring(0, 3), 10);
-      const year = 2025;
+      const routeRaw = parts[2].substring(0, 6);
+      const origin = routeRaw.substring(0, 3);
+      const destination = routeRaw.substring(3, 6);
+      const route = `${origin} → ${destination}`;
+
+      const airlineCode = parts[2].slice(-2);
+      const airlineName = airlineMap[airlineCode] || airlineCode;
+      const flightNumber = parts[3];
+      const fullFlight = `${airlineCode} ${flightNumber}`;
+
+      const julianDay = parseInt(parts[4].substring(0, 3), 10);
+      const seat = parts[4].substring(4, 8);
+      const year = new Date().getFullYear();
       const tanggal = julianToDate(julianDay, year);
 
-      const routeRaw = parts[2].substring(0, 6);
-      const routeOri = routeRaw.substring(0, 3);
-      const routeDest = routeRaw.substring(3, 6);
-      const route = `${routeOri} → ${routeDest}`;
-
-      const maskapaiCode = parts[2].slice(-2);
-      const maskapaiName = airlineMap[maskapaiCode] || maskapaiCode;
-
-      const seat = parts[4].substring(4, 8);
-
-      return `✈️ Nama         : ${fullName}
-🛫 Rute         : ${route}
-🛩️ Maskapai     : ${maskapaiName} (${maskapaiCode})
+      return `
+✈️ Nama         : ${fullName}
 📅 Tanggal      : ${tanggal}
+🛫 Rute         : ${route}
+🛩️ Maskapai     : ${airlineName}
+✈️ Flight       : ${fullFlight}
 💺 No Kursi     : ${seat}`;
     }
 
-    function saveToHistory(text) {
+    function saveScanToHistory(parsedText) {
       let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
-      history.unshift({ text, time: new Date().toLocaleString() });
+      history.unshift({ text: parsedText, time: new Date().toLocaleString('id-ID') });
+      if (history.length > 50) history = history.slice(0, 50);
       localStorage.setItem('scanHistory', JSON.stringify(history));
     }
 
-    function renderHistory() {
+    function loadScanHistory() {
       const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
       if (history.length === 0) {
-        historyList.textContent = "Belum ada scan.";
+        scanHistoryText.textContent = "Belum ada riwayat.";
         return;
       }
-      historyList.innerHTML = "";
-      history.forEach(item => {
-        const div = document.createElement('div');
-        div.style.borderBottom = "1px solid #eee";
-        div.style.padding = "10px 0";
-        div.innerText = `${item.text}\n🕒 ${item.time}`;
-        historyList.appendChild(div);
-      });
+      scanHistoryText.textContent = history.map((h, i) => `#${i + 1} (${h.time})\n${h.text}`).join('\n\n');
     }
 
     function toggleHistory() {
-      if (historySection.style.display === "none") {
-        renderHistory();
-        historySection.style.display = "block";
+      if (historyCard.style.display === 'none') {
+        loadScanHistory();
+        historyCard.style.display = 'block';
       } else {
-        historySection.style.display = "none";
+        historyCard.style.display = 'none';
       }
     }
 
-    function clearHistory() {
-      if (confirm("Yakin ingin menghapus seluruh riwayat scan?")) {
-        localStorage.removeItem('scanHistory');
-        renderHistory();
-      }
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    let lastResult = '';
+
+    function playBeepTwice() {
+      beepSound.play();
+      setTimeout(() => beepSound.play(), 300);
     }
 
     function startCamera() {
@@ -210,7 +199,6 @@
           video.srcObject = stream;
           video.setAttribute("playsinline", true);
           video.play();
-
           codeReader.decodeFromVideoDevice(null, video, (result, err) => {
             if (result) {
               const scannedText = result.getText();
@@ -218,7 +206,7 @@
                 lastResult = scannedText;
                 const parsed = parseBoardingPass(scannedText);
                 parsedOutput.textContent = parsed;
-                saveToHistory(parsed);
+                saveScanToHistory(parsed);
                 playBeepTwice();
               }
             }
@@ -231,6 +219,5 @@
 
     startCamera();
   </script>
-
 </body>
 </html>
