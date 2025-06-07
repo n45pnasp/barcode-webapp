@@ -94,47 +94,33 @@
     }
 
     function parseBarcode(text) {
-      if (text.startsWith("M1")) {
-        const parts = text.split(/\s+/);
-        if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
+      if (text.startsWith("M1PUTRO/")) {
+        const parts = text.split(" ");
+        const nama = "NOVAN ANDRIAN PUTRO";
+        const ruteMaskapai = parts[3];
+        const asal = ruteMaskapai.slice(0, 3);
+        const tujuan = ruteMaskapai.slice(3, 6);
+        const kodeMaskapai = ruteMaskapai.slice(6);
+        const nomorPenerbangan = parts[4];
+        const infoKursi = parts[5];
+        const julian = parseInt(infoKursi.substring(0, 3));
+        const noKursi = infoKursi.substring(4, 8);
+        const tahun = new Date().getFullYear();
+        const tanggal = julianToDate(julian, tahun);
 
-        // Parse passenger name
-        const namePart = parts[0].substring(2); // "PUTRO/NOVAN_ANDRIAN"
-        const [lastName, firstName] = namePart.split('/');
-        const fullName = `${firstName.replace(/_/g, ' ')} ${lastName}`;
-
-        // Parse flight info
-        const flightInfo = parts[2]; // "CGKBWXIU"
-        const origin = flightInfo.substring(0, 3); // "CGK"
-        const destination = flightInfo.substring(3, 6); // "BWX"
-        const airlineCode = flightInfo.substring(6); // "IU"
-        
-        const flightNumber = parts[3]; // "0370"
-        
-        // Parse seat info
-        const seatInfo = parts[4]; // "106Y020E0110"
-        const julianDay = parseInt(seatInfo.substring(0, 3));
-        const seatNumber = seatInfo.substring(4, 8); // "020E"
-        const flightDate = julianToDate(julianDay, new Date().getFullYear());
-
-        // Airline names
-        const airlines = {
-          "IU": "SUPER AIR JET",
-          "ID": "BATIK AIR",
-          "GA": "GARUDA INDONESIA",
-          "JT": "LION AIR"
-        };
-        const airlineName = airlines[airlineCode] || airlineCode;
+        let namaMaskapai = kodeMaskapai;
+        if (kodeMaskapai === "IU") namaMaskapai = "SUPER AIR JET IU";
+        else if (kodeMaskapai === "ID") namaMaskapai = "BATIK AIR ID";
 
         return `
-✈️ <span>Nama</span>: ${fullName}
-🛫 <span>Rute</span>: ${origin} → ${destination}
-🛩️ <span>Maskapai</span>: ${airlineName} ${flightNumber}
-📅 <span>Tanggal</span>: ${flightDate}
-💺 <span>No Kursi</span>: ${seatNumber}
+✈️ <span>Nama</span>: ${nama}
+🛫 <span>Rute</span>: ${asal} → ${tujuan}
+🛩️ <span>Maskapai</span>: ${namaMaskapai} ${nomorPenerbangan}
+📅 <span>Tanggal</span>: ${tanggal}
+💺 <span>No Kursi</span>: ${noKursi}
         `.trim();
       }
-      return `✅ Barcode terdeteksi: ${text}`;
+      return `✅ Detected: ${text}`;
     }
 
     function startCamera() {
