@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>📷 Boarding Pass Scanner</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
@@ -33,11 +38,16 @@
       width: 100%;
       margin-bottom: 16px;
     }
-    h1 { font-size: 1.5rem; }
+    h1 {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     video {
       width: 100%;
       border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
       margin-bottom: 20px;
     }
     .card {
@@ -46,7 +56,7 @@
       padding: 20px;
       margin-bottom: 16px;
       width: 100%;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
       transition: background-color 0.3s ease;
     }
     .label {
@@ -56,6 +66,9 @@
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .text {
       font-size: 1rem;
@@ -78,6 +91,10 @@
       cursor: pointer;
       flex: 1;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       transition: background 0.3s ease;
     }
     .btn:hover {
@@ -93,7 +110,7 @@
     .dark .card {
       background-color: #333;
       color: #eee;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
     }
     .dark .label {
       color: #ccc;
@@ -112,40 +129,50 @@
       font-size: 1.5rem;
       cursor: pointer;
       margin-left: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      color: inherit;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
-
     <div class="header">
-      <h1>📷 Boarding Pass Scanner</h1>
-      <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()">🌙</button>
+      <h1><i data-feather="camera"></i> Boarding Pass Scanner</h1>
+      <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+        <i data-feather="moon"></i>
+      </button>
     </div>
 
     <video id="video" autoplay></video>
 
     <div class="card">
-      <div class="label">📄 Informasi Boarding Pass</div>
+      <div class="label"><i data-feather="file-text"></i> Informasi Boarding Pass</div>
       <div class="text" id="parsedOutput">Menunggu scan...</div>
     </div>
 
     <div class="button-row">
-      <button class="btn" onclick="toggleHistory()">📚 Riwayat</button>
-      <button class="btn" onclick="clearHistory()">🗑️ Hapus</button>
+      <button class="btn" onclick="toggleHistory()">
+        <i data-feather="book-open"></i> Riwayat
+      </button>
+      <button class="btn" onclick="clearHistory()">
+        <i data-feather="trash-2"></i> Hapus
+      </button>
     </div>
 
     <div class="card" id="historyCard">
-      <div class="label">📜 Riwayat Scan</div>
+      <div class="label"><i data-feather="file-text"></i> Riwayat Scan</div>
       <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
     </div>
-
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
+    feather.replace();
+
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
@@ -154,12 +181,12 @@
     const darkModeBtn = document.getElementById('darkModeBtn');
 
     const airlineMap = {
-      "ID": "BATIK AIR",
-      "IU": "SUPER AIR JET",
-      "QG": "CITILINK",
-      "GA": "GARUDA INDONESIA",
-      "JT": "LION AIR",
-      "IW": "WINGS AIR",
+      ID: "BATIK AIR",
+      IU: "SUPER AIR JET",
+      QG: "CITILINK",
+      GA: "GARUDA INDONESIA",
+      JT: "LION AIR",
+      IW: "WINGS AIR",
     };
 
     function splitFromBack(str, maxSplits) {
@@ -190,16 +217,16 @@
       const slashIndex = namaRaw.indexOf('/');
       let fullName = slashIndex === -1
         ? namaRaw.replace(/_/g, ' ').trim()
-        : (namaRaw.substring(slashIndex+1) + " " + namaRaw.substring(0, slashIndex)).replace(/_/g, ' ').trim();
+        : (namaRaw.substring(slashIndex + 1) + " " + namaRaw.substring(0, slashIndex)).replace(/_/g, ' ').trim();
 
-      const routeRaw = parts[2].substring(0,6);
-      const origin = routeRaw.substring(0,3);
-      const destination = routeRaw.substring(3,6);
+      const routeRaw = parts[2].substring(0, 6);
+      const origin = routeRaw.substring(0, 3);
+      const destination = routeRaw.substring(3, 6);
       const airlineCode = parts[2].slice(-2);
       const airlineName = airlineMap[airlineCode] || airlineCode;
       const flightNumber = parts[3];
       const julianDay = parseInt(parts[4].substring(0, 3), 10);
-      const seat = parts[4].substring(4,8);
+      const seat = parts[4].substring(4, 8);
       const year = new Date().getFullYear();
       const tanggal = julianToDate(julianDay, year);
       const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -228,7 +255,7 @@
         scanHistoryText.textContent = "Belum ada riwayat.";
         return;
       }
-      scanHistoryText.innerHTML = history.map((h, i) => `#${i+1} (${h.time})<br>${h.text}`).join('<br><br>');
+      scanHistoryText.innerHTML = history.map((h, i) => `#${i + 1} (${h.time})<br>${h.text}`).join('<br><br>');
     }
 
     function toggleHistory() {
@@ -249,7 +276,11 @@
 
     function toggleDarkMode() {
       document.body.classList.toggle("dark");
-      darkModeBtn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      const isDark = document.body.classList.contains("dark");
+      darkModeBtn.innerHTML = isDark
+        ? '<i data-feather="sun"></i>'
+        : '<i data-feather="moon"></i>';
+      feather.replace();
     }
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -282,6 +313,5 @@
     }
     startCamera();
   </script>
-
 </body>
 </html>
