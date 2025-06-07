@@ -126,29 +126,15 @@
       });
     }
 
-    function isBookingCode(str) {
-      // Cek kode booking: 6 karakter alfanumerik uppercase (bisa huruf/angka)
-      return /^[A-Z0-9]{6}$/.test(str);
-    }
-
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
         const parts = text.split(" ");
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
+        // Hanya ambil nama dari bagian pertama (parts[0]) saja
         const namaRaw = parts[0].substring(2);
         const [lastName, ...firstNamesArr] = namaRaw.split("/");
-
-        // Ambil nama tambahan di parts setelah index 0, tapi stop kalau ketemu kode booking
-        let additionalFirstNames = [];
-        for (let i = 1; i < parts.length; i++) {
-          if (isBookingCode(parts[i])) break;
-          additionalFirstNames.push(parts[i]);
-        }
-
-        const firstNamesFull = [...firstNamesArr, ...additionalFirstNames]
-          .join(" ")
-          .replace(/_/g, " ");
+        const firstNamesFull = firstNamesArr.join(" ").replace(/_/g, " ");
         const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
 
         const ruteMaskapai = parts[3];
@@ -184,18 +170,10 @@
       const parts = rawText.split(" ");
       if (parts.length < 6) return;
 
+      // Ambil nama dari bagian pertama saja
       const namaRaw = parts[0].substring(2);
       const [lastName, ...firstNamesArr] = namaRaw.split("/");
-
-      let additionalFirstNames = [];
-      for (let i = 1; i < parts.length; i++) {
-        if (isBookingCode(parts[i])) break;
-        additionalFirstNames.push(parts[i]);
-      }
-
-      const firstNamesFull = [...firstNamesArr, ...additionalFirstNames]
-        .join(" ")
-        .replace(/_/g, " ");
+      const firstNamesFull = firstNamesArr.join(" ").replace(/_/g, " ");
       const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
 
       const ruteMaskapai = parts[3];
