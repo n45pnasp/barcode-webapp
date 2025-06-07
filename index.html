@@ -2,12 +2,16 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
@@ -18,12 +22,15 @@
       padding: 20px;
       color: #333;
     }
-    h1 { font-size: 1.5rem; margin-bottom: 16px; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
     video {
       width: 100%;
-      max-width: 380px;
+      max-width: 360px;
       border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
       margin-bottom: 20px;
     }
     .card {
@@ -31,9 +38,11 @@
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 16px;
-      max-width: 380px;
+      max-width: 360px;
       width: 100%;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      word-wrap: break-word;
+      white-space: pre-line;
     }
     .label {
       font-size: 1rem;
@@ -45,36 +54,57 @@
     }
     .text {
       font-size: 1rem;
-      white-space: pre-line;
       line-height: 1.6;
-    }
-    #historyCard {
-      display: none;
+      white-space: pre-line;
     }
     button {
-      padding: 10px 16px;
-      background-color: #4a90e2;
-      color: white;
+      background-color: #007bff;
       border: none;
-      border-radius: 12px;
+      color: white;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 10px;
       cursor: pointer;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4);
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #historyList {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    #historyList .history-item {
+      background: #f9f9f9;
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      white-space: pre-line;
+      font-size: 0.95rem;
+      color: #222;
     }
   </style>
 </head>
 <body>
+
   <h1>📷 Boarding Pass Scanner</h1>
   <video id="video" autoplay></video>
+
+  <button id="toggleHistoryBtn">Lihat History Scan ▼</button>
 
   <div class="card">
     <div class="label">📄 Informasi Boarding Pass</div>
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <button onclick="toggleHistory()">📜 Lihat Riwayat Scan</button>
-  <div class="card" id="historyCard">
-    <div class="label">🕘 Riwayat Scan</div>
-    <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
+  <div class="card" id="historyCard" style="display:none;">
+    <div class="label">📜 History Scan</div>
+    <div id="historyList"></div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -83,110 +113,135 @@
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
+    const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
     const historyCard = document.getElementById('historyCard');
-    const scanHistoryText = document.getElementById('scanHistoryText');
+    const historyList = document.getElementById('historyList');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
+
+    // Airline code mapping
+    const airlineMap = {
+      "ID": "BATIK AIR",
+      "IU": "SUPER AIR JET",
+      "QG": "CITILINK"
+      // Bisa ditambah lagi sesuai kebutuhan
+    };
 
     function playBeepTwice() {
       beepSound.play();
       setTimeout(() => beepSound.play(), 300);
     }
 
-    function julianToDate(julian, year) {
+    function julianToDate(julianDay, year) {
       const date = new Date(year, 0);
-      date.setDate(julian);
+      date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
+    // Parsing boarding pass data sesuai prosedur Anda
     function parseBoardingPass(text) {
       const parts = text.trim().split(/\s+/).reverse();
       if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
       const [part6, part5, part4, part3, part2, part1] = parts;
 
-      const nameRaw = part1.slice(2);
-      const [last, first] = nameRaw.split('/');
-      const fullName = first?.includes(' ') ? `${first} ${last}` : `${first?.replace(/_/g, ' ')} ${last}`;
+      // Nama: ambil dari part1, hapus M1, split /, gabungkan firstName + spasi + lastName
+      const nameRaw = part1.slice(2); // Hilangkan "M1"
+      const slashIndex = nameRaw.indexOf('/');
+      if (slashIndex === -1) return "❌ Format nama tidak sesuai.";
+      const lastName = nameRaw.substring(0, slashIndex).trim();
+      const firstName = nameRaw.substring(slashIndex + 1).trim();
+      const fullName = `${firstName} ${lastName}`;
 
-      const julian = parseInt(part5.slice(0, 3));
-      const date = julianToDate(julian, new Date().getFullYear());
+      // Tanggal: 4 huruf depan part5 = julian date (3 digit) + 1 huruf
+      // Julian day = 3 digit awal part5
+      const julianDayStr = part5.substring(0, 3);
+      const julianDay = parseInt(julianDayStr, 10);
+      if (isNaN(julianDay)) return "❌ Format tanggal salah.";
+      const year = new Date().getFullYear();
+      const flightDate = julianToDate(julianDay, year);
 
-      const routeRaw = part3.slice(0, 6);
-      const route = `${routeRaw.slice(0, 3)} → ${routeRaw.slice(3, 6)}`;
+      // Seat: huruf ke 5 sampai 8 di part5 (index 4-7)
+      const seatNumber = part5.substring(4, 8);
 
-      const airlineCode = part3.slice(-2);
-      const airlineMap = {
-        "ID": "BATIK AIR",
-        "IU": "SUPER AIR JET",
-        "QG": "CITILINK",
-        "GA": "GARUDA INDONESIA",
-        "JT": "LION AIR"
-      };
-      const airline = airlineMap[airlineCode] || airlineCode;
+      // Route dan Maskapai
+      // part3 6 huruf depan, split 3 dan 3
+      const origin = part3.substring(0, 3);
+      const destination = part3.substring(3, 6);
+      const airlineCode = part3.substring(6); // sisanya setelah 6 huruf
 
-      const flight = `${airlineCode} ${part4}`;
-      const seat = part5.slice(4, 8);
+      // Maskapai hanya nama, tanpa kode
+      const airlineName = airlineMap[airlineCode] || airlineCode;
 
+      // Flight: gabung kode maskapai + spasi + part4
+      const flightCode = `${airlineCode} ${part4}`;
+
+      // Format output string
       return `
-✈️ Nama     : ${fullName}
-📅 Tanggal  : ${date}
-🛫 Rute     : ${route}
-🛩️ Maskapai : ${airline}
-🔢 Flight   : ${flight}
-💺 No Kursi : ${seat}`.trim();
+✈️ Nama       : ${fullName}
+📅 Tanggal    : ${flightDate}
+🛫 Rute       : ${origin} → ${destination}
+🛩️ Maskapai   : ${airlineName}
+🎫 Flight     : ${flightCode}
+💺 No Kursi   : ${seatNumber}
+      `.trim();
     }
 
-    function saveScanToHistory(text) {
-      let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
-      history.unshift(text);
-      localStorage.setItem('scanHistory', JSON.stringify(history.slice(0, 10)));
+    function saveToHistory(text) {
+      const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+      const timestamp = new Date().toLocaleString('id-ID');
+      history.unshift({ text, timestamp });
+      if (history.length > 50) history.pop(); // batasi max 50 history
+      localStorage.setItem('scanHistory', JSON.stringify(history));
+      renderHistory();
     }
 
-    function loadHistory() {
-      let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
       if (history.length === 0) {
-        scanHistoryText.textContent = "Belum ada riwayat.";
-      } else {
-        scanHistoryText.textContent = history.join('\n\n');
+        historyList.innerHTML = "<i>Belum ada history scan.</i>";
+        return;
       }
+      historyList.innerHTML = history
+        .map(h => `<div class="history-item">[${h.timestamp}]\n${h.text}</div>`)
+        .join('');
     }
 
-    function toggleHistory() {
-      historyCard.style.display = historyCard.style.display === 'none' ? 'block' : 'none';
-      if (historyCard.style.display === 'block') loadHistory();
-    }
+    toggleHistoryBtn.addEventListener('click', () => {
+      if (historyCard.style.display === 'none') {
+        historyCard.style.display = 'block';
+        toggleHistoryBtn.textContent = 'Sembunyikan History Scan ▲';
+        renderHistory();
+      } else {
+        historyCard.style.display = 'none';
+        toggleHistoryBtn.textContent = 'Lihat History Scan ▼';
+      }
+    });
 
     function startCamera() {
-      navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      })
-      .then(stream => {
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true);
-        video.play();
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
 
-        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-          if (result) {
-            const scannedText = result.getText();
-            if (scannedText !== lastResult) {
-              lastResult = scannedText;
-              const parsed = parseBoardingPass(scannedText);
-              parsedOutput.textContent = parsed;
-              saveScanToHistory(parsed);
-              playBeepTwice();
+          codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+            if (result) {
+              const scannedText = result.getText();
+              if (scannedText !== lastResult) {
+                lastResult = scannedText;
+                const parsed = parseBoardingPass(scannedText);
+                parsedOutput.textContent = parsed;
+                saveToHistory(parsed);
+                playBeepTwice();
+              }
             }
-          }
+          });
+        })
+        .catch(err => {
+          parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
-      })
-      .catch(err => {
-        parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
-      });
     }
 
     startCamera();
