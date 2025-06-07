@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -203,7 +203,14 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                const parsed = parseBoardingPass(scannedText);
+
+                let parsed;
+                if (scannedText.startsWith("M1")) {
+                  parsed = parseBoardingPass(scannedText);
+                } else {
+                  parsed = `✅ Data QR/PDF417 berhasil dipindai:\n\n${scannedText}`;
+                }
+
                 parsedOutput.textContent = parsed;
                 saveScanToHistory(parsed);
                 playBeepTwice();
