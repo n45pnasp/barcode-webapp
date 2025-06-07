@@ -34,21 +34,6 @@
       overflow: hidden;
       box-shadow: 0 0 8px rgba(0,0,0,0.15);
     }
-    button {
-      display: block;
-      margin: 0 auto 1.5em auto;
-      background-color: #007bff;
-      color: white;
-      font-weight: 700;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -88,10 +73,7 @@
 
   <div id="reader"></div>
 
-  <div id="log">Arahkan kamera ke barcode boarding pass</div>
-
-  <button id="startButton">Mulai Scan</button>
-  <button id="stopButton" disabled>Berhenti Scan</button>
+  <div id="log">Meminta izin kamera...</div>
 
   <div id="result"></div>
 </div>
@@ -102,8 +84,7 @@
 <script>
   const resultContainer = document.getElementById('result');
   const log = document.getElementById('log');
-  const startButton = document.getElementById('startButton');
-  const stopButton = document.getElementById('stopButton');
+  const readerElementId = "reader";
 
   let html5QrcodeScanner;
   let scanning = false;
@@ -155,6 +136,7 @@
     const lastNameRaw = nameParts[0].replace(/^M1/, '').trim();
     const frontPartRaw = nameParts[1].trim();
 
+    // Pisahkan nama depan dan gelar jika ada
     const frontSplit = frontPartRaw.split(' ');
     let firstName = frontSplit[0];
     let title = '';
@@ -162,6 +144,7 @@
       title = frontSplit.slice(1).join(' ');
     }
 
+    // Gabungkan nama sesuai format: [title + spasi] firstName lastName
     const fullName = title ? `${firstName} ${title} ${lastNameRaw}` : `${firstName} ${lastNameRaw}`;
 
     return {
@@ -203,31 +186,30 @@
   }
 
   function onScanSuccess(decodedText, decodedResult) {
+    if (!scanning) return;
     log.textContent = 'Data barcode terbaca, parsing...';
     scanning = false;
+
     html5QrcodeScanner.stop().then(() => {
       log.textContent = 'Scan berhenti.';
-      startButton.disabled = false;
-      stopButton.disabled = true;
-
-      const parsed = parseLine(decodedText);
-      displayResult(parsed);
+      displayResult(parseLine(decodedText));
     }).catch(err => {
       log.textContent = 'Gagal berhenti scan: ' + err;
     });
   }
 
   function onScanFailure(error) {
-    // bisa tampilkan log jika mau, tapi biasanya terlalu sering
-    // console.warn(`Scan gagal: ${error}`);
+    // optional, jangan terlalu sering tampilkan log
   }
 
-  startButton.addEventListener('click', () => {
-    if (scanning) return;
-    html5QrcodeScanner = new Html5Qrcode("reader");
+  function startScanning() {
+    html5QrcodeScanner = new Html5Qrcode(readerElementId);
+
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
+        scanning = true;
         const cameraId = cameras[0].id;
+        log.textContent = 'Menyala, arahkan kamera ke barcode boarding pass...';
         html5QrcodeScanner.start(
           cameraId,
           {
@@ -236,34 +218,25 @@
           },
           onScanSuccess,
           onScanFailure
-        ).then(() => {
-          log.textContent = 'Menyala, arahkan kamera ke barcode boarding pass...';
-          scanning = true;
-          startButton.disabled = true;
-          stopButton.disabled = false;
-          resultContainer.innerHTML = '';
-        }).catch(err => {
+        ).catch(err => {
           log.textContent = 'Gagal mulai scan: ' + err;
         });
       } else {
-        log.textContent = 'Tidak ditemukan kamera.';
+        log.textContent = 'Tidak ditemukan kamera pada perangkat.';
       }
     }).catch(err => {
-      log.textContent = 'Error akses kamera: ' + err;
+      log.textContent = 'Gagal akses kamera: ' + err;
     });
-  });
+  }
 
-  stopButton.addEventListener('click', () => {
-    if (!scanning) return;
-    html5QrcodeScanner.stop().then(() => {
-      log.textContent = 'Scan berhenti.';
-      scanning = false;
-      startButton.disabled = false;
-      stopButton.disabled = true;
-    }).catch(err => {
-      log.textContent = 'Gagal berhenti scan: ' + err;
+  // Minta izin kamera lalu mulai scanning otomatis
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(() => {
+      startScanning();
+    })
+    .catch(() => {
+      log.textContent = 'Izin kamera ditolak atau kamera tidak tersedia.';
     });
-  });
 </script>
 
 </body>
