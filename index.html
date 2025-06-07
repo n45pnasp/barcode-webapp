@@ -77,29 +77,48 @@
     }
     .button-row {
       display: flex;
-      gap: 10px;
+      gap: 16px;
       margin-bottom: 16px;
       width: 100%;
     }
+    /* Tombol Anamorphic */
     .btn {
-      background: #4a90e2;
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
       flex: 1;
-      text-align: center;
+      padding: 14px 20px;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #ffffff;
+      background: linear-gradient(145deg, #5a86ff, #3366ff);
+      border-radius: 16px;
+      border: none;
+      cursor: pointer;
+      box-shadow:
+        8px 8px 15px #2347b8,
+        -8px -8px 15px #7fa3ff;
+      transition: all 0.25s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: background 0.3s ease;
+      gap: 8px;
+      user-select: none;
+    }
+    .btn i {
+      stroke-width: 2.5;
     }
     .btn:hover {
-      background: #3f7fd2;
+      background: linear-gradient(145deg, #7097ff, #4a7aff);
+      box-shadow:
+        4px 4px 10px #1a399c,
+        -4px -4px 10px #92a9ff;
+      transform: translateY(-2px);
     }
+    .btn:active {
+      background: linear-gradient(145deg, #2d4dcc, #1f36b8);
+      box-shadow: inset 4px 4px 8px #1a2e8a,
+                  inset -4px -4px 8px #2e4ecc;
+      transform: translateY(0);
+    }
+
     #historyCard {
       display: none;
     }
@@ -117,11 +136,22 @@
       border-bottom-color: #555;
     }
     .dark .btn {
-      background: #666;
+      background: linear-gradient(145deg, #4a6aff, #2746cc);
+      box-shadow:
+        8px 8px 15px #1f318e,
+        -8px -8px 15px #6482ff;
       color: #eee;
     }
     .dark .btn:hover {
-      background: #555;
+      background: linear-gradient(145deg, #5b7aff, #3a57ee);
+      box-shadow:
+        4px 4px 10px #172979,
+        -4px -4px 10px #7a8fff;
+    }
+    .dark .btn:active {
+      background: linear-gradient(145deg, #223da7, #16267d);
+      box-shadow: inset 4px 4px 8px #122364,
+                  inset -4px -4px 8px #1d3da6;
     }
     .dark-toggle-btn {
       background: transparent;
@@ -134,6 +164,10 @@
       justify-content: center;
       padding: 0;
       color: inherit;
+      transition: color 0.25s ease;
+    }
+    .dark-toggle-btn:hover {
+      color: #4a90e2;
     }
   </style>
 </head>
