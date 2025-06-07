@@ -2,68 +2,52 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
-      background: #f5f7fa;
-      color: #333;
+      background: linear-gradient(135deg, #f4f6f9, #e9edf2);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px;
-      min-height: 100vh;
+      padding: 20px;
+      color: #333;
     }
-
-    h1 {
-      font-size: 1.75rem;
-      margin-bottom: 20px;
-      font-weight: 700;
-      color: #2c3e50;
-    }
-
+    h1 { font-size: 1.5rem; margin-bottom: 20px; }
     video {
       width: 100%;
       max-width: 360px;
       border-radius: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      margin-bottom: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
     }
-
     .card {
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 20px;
       padding: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       max-width: 360px;
       width: 100%;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
-
     .label {
       font-size: 1rem;
       font-weight: 600;
-      color: #34495e;
+      color: #4a4a4a;
       margin-bottom: 12px;
-      border-bottom: 1px solid #e0e6ed;
-      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
     }
-
     .text {
       font-size: 1rem;
       white-space: pre-line;
       line-height: 1.6;
     }
-
     .btn {
       background: linear-gradient(145deg, #e0e6ed, #f9fbfd);
       color: #333;
@@ -76,11 +60,9 @@
       box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
       transition: all 0.2s ease;
     }
-
     .btn:hover {
       background: linear-gradient(145deg, #d1d9e6, #f9fbfd);
     }
-
     #historyCard {
       display: none;
     }
@@ -119,7 +101,7 @@
       "QG": "CITILINK",
       "GA": "GARUDA INDONESIA",
       "JT": "LION AIR",
-      "IW": "WINGS AIR"
+      "IW": "WINGS AIR",
     };
 
     function splitFromBack(str, maxSplits) {
