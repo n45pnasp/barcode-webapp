@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Boarding Pass Scanner</title>
+  <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <script src="https://unpkg.com/feather-icons"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * {
@@ -40,9 +39,6 @@
     }
     h1 {
       font-size: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
     video {
       width: 100%;
@@ -66,9 +62,6 @@
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     .text {
       font-size: 1rem;
@@ -77,24 +70,23 @@
     }
     .button-row {
       display: flex;
-      gap: 16px;
+      gap: 10px;
       margin-bottom: 16px;
       width: 100%;
     }
-    /* Tombol Anamorphic */
     .btn {
       flex: 1;
       padding: 14px 20px;
       font-weight: 700;
       font-size: 1rem;
-      color: #ffffff;
-      background: linear-gradient(145deg, #5a86ff, #3366ff);
+      color: #555;
+      background: linear-gradient(145deg, #f0f2f5, #d9dde3);
       border-radius: 16px;
       border: none;
       cursor: pointer;
       box-shadow:
-        8px 8px 15px #2347b8,
-        -8px -8px 15px #7fa3ff;
+        8px 8px 15px #b8bec6,
+        -8px -8px 15px #ffffff;
       transition: all 0.25s ease;
       display: flex;
       align-items: center;
@@ -102,23 +94,21 @@
       gap: 8px;
       user-select: none;
     }
-    .btn i {
-      stroke-width: 2.5;
-    }
     .btn:hover {
-      background: linear-gradient(145deg, #7097ff, #4a7aff);
+      background: linear-gradient(145deg, #e6e9ef, #c7ccd5);
       box-shadow:
-        4px 4px 10px #1a399c,
-        -4px -4px 10px #92a9ff;
+        4px 4px 10px #a1a8b2,
+        -4px -4px 10px #fefefe;
       transform: translateY(-2px);
+      color: #444;
     }
     .btn:active {
-      background: linear-gradient(145deg, #2d4dcc, #1f36b8);
-      box-shadow: inset 4px 4px 8px #1a2e8a,
-                  inset -4px -4px 8px #2e4ecc;
+      background: linear-gradient(145deg, #c2c8d1, #a7aebc);
+      box-shadow: inset 4px 4px 8px #8b9099,
+        inset -4px -4px 8px #d6dbdf;
       transform: translateY(0);
+      color: #333;
     }
-
     #historyCard {
       display: none;
     }
@@ -136,22 +126,26 @@
       border-bottom-color: #555;
     }
     .dark .btn {
-      background: linear-gradient(145deg, #4a6aff, #2746cc);
+      background: linear-gradient(145deg, #3a3a3a, #242424);
+      color: #ccc;
       box-shadow:
-        8px 8px 15px #1f318e,
-        -8px -8px 15px #6482ff;
-      color: #eee;
+        8px 8px 15px #1e1e1e,
+        -8px -8px 15px #4a4a4a;
     }
     .dark .btn:hover {
-      background: linear-gradient(145deg, #5b7aff, #3a57ee);
+      background: linear-gradient(145deg, #2f2f2f, #1a1a1a);
       box-shadow:
-        4px 4px 10px #172979,
-        -4px -4px 10px #7a8fff;
+        4px 4px 10px #171717,
+        -4px -4px 10px #525252;
+      color: #eee;
+      transform: translateY(-2px);
     }
     .dark .btn:active {
-      background: linear-gradient(145deg, #223da7, #16267d);
-      box-shadow: inset 4px 4px 8px #122364,
-                  inset -4px -4px 8px #1d3da6;
+      background: linear-gradient(145deg, #212121, #121212);
+      box-shadow: inset 4px 4px 8px #0d0d0d,
+        inset -4px -4px 8px #292929;
+      transform: translateY(0);
+      color: #ddd;
     }
     .dark-toggle-btn {
       background: transparent;
@@ -159,45 +153,31 @@
       font-size: 1.5rem;
       cursor: pointer;
       margin-left: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
       color: inherit;
-      transition: color 0.25s ease;
-    }
-    .dark-toggle-btn:hover {
-      color: #4a90e2;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1><i data-feather="camera"></i> Boarding Pass Scanner</h1>
-      <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
-        <i data-feather="moon"></i>
-      </button>
+      <h1>📷 Boarding Pass Scanner</h1>
+      <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()">🌙</button>
     </div>
 
     <video id="video" autoplay></video>
 
     <div class="card">
-      <div class="label"><i data-feather="file-text"></i> Informasi Boarding Pass</div>
+      <div class="label">📄 Informasi Boarding Pass</div>
       <div class="text" id="parsedOutput">Menunggu scan...</div>
     </div>
 
     <div class="button-row">
-      <button class="btn" onclick="toggleHistory()">
-        <i data-feather="book-open"></i> Riwayat
-      </button>
-      <button class="btn" onclick="clearHistory()">
-        <i data-feather="trash-2"></i> Hapus
-      </button>
+      <button class="btn" onclick="toggleHistory()">📚 Riwayat</button>
+      <button class="btn" onclick="clearHistory()">🗑️ Hapus</button>
     </div>
 
     <div class="card" id="historyCard">
-      <div class="label"><i data-feather="file-text"></i> Riwayat Scan</div>
+      <div class="label">📜 Riwayat Scan</div>
       <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
     </div>
   </div>
@@ -205,8 +185,6 @@
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
-    feather.replace();
-
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
@@ -215,19 +193,19 @@
     const darkModeBtn = document.getElementById('darkModeBtn');
 
     const airlineMap = {
-      ID: "BATIK AIR",
-      IU: "SUPER AIR JET",
-      QG: "CITILINK",
-      GA: "GARUDA INDONESIA",
-      JT: "LION AIR",
-      IW: "WINGS AIR",
+      ID: 'BATIK AIR',
+      IU: 'SUPER AIR JET',
+      QG: 'CITILINK',
+      GA: 'GARUDA INDONESIA',
+      JT: 'LION AIR',
+      IW: 'WINGS AIR',
     };
 
     function splitFromBack(str, maxSplits) {
       const parts = [];
       let remaining = str;
       for (let i = 0; i < maxSplits; i++) {
-        const lastSpace = remaining.lastIndexOf(" ");
+        const lastSpace = remaining.lastIndexOf(' ');
         if (lastSpace === -1) break;
         parts.unshift(remaining.slice(lastSpace + 1));
         remaining = remaining.slice(0, lastSpace);
@@ -243,15 +221,16 @@
     }
 
     function parseBoardingPass(data) {
-      if (!data.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
+      if (!data.startsWith('M1')) return '❌ Format barcode tidak dikenali.';
       const parts = splitFromBack(data, 5);
-      if (parts.length < 6) return "⚠️ Data tidak lengkap.";
+      if (parts.length < 6) return '⚠️ Data tidak lengkap.';
 
       const namaRaw = parts[0].substring(2);
       const slashIndex = namaRaw.indexOf('/');
-      let fullName = slashIndex === -1
-        ? namaRaw.replace(/_/g, ' ').trim()
-        : (namaRaw.substring(slashIndex + 1) + " " + namaRaw.substring(0, slashIndex)).replace(/_/g, ' ').trim();
+      let fullName =
+        slashIndex === -1
+          ? namaRaw.replace(/_/g, ' ').trim()
+          : (namaRaw.substring(slashIndex + 1) + ' ' + namaRaw.substring(0, slashIndex)).replace(/_/g, ' ').trim();
 
       const routeRaw = parts[2].substring(0, 6);
       const origin = routeRaw.substring(0, 3);
@@ -264,9 +243,7 @@
       const year = new Date().getFullYear();
       const tanggal = julianToDate(julianDay, year);
       const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      const tanggalFormatted = (tanggal !== today)
-        ? `<span style="color:red;font-weight:bold">${tanggal}</span>`
-        : tanggal;
+      const tanggalFormatted = tanggal !== today ? `<span style="color:red;font-weight:bold">${tanggal}</span>` : tanggal;
 
       return `✈️ Nama         : ${fullName}
 📅 Tanggal      : ${tanggalFormatted}
@@ -286,10 +263,12 @@
     function loadScanHistory() {
       const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
       if (history.length === 0) {
-        scanHistoryText.textContent = "Belum ada riwayat.";
+        scanHistoryText.textContent = 'Belum ada riwayat.';
         return;
       }
-      scanHistoryText.innerHTML = history.map((h, i) => `#${i + 1} (${h.time})<br>${h.text}`).join('<br><br>');
+      scanHistoryText.innerHTML = history
+        .map((h, i) => `#${i + 1} (${h.time})<br>${h.text}`)
+        .join('<br><br>');
     }
 
     function toggleHistory() {
@@ -302,19 +281,15 @@
     }
 
     function clearHistory() {
-      if (confirm("Yakin ingin menghapus semua riwayat scan?")) {
+      if (confirm('Yakin ingin menghapus semua riwayat scan?')) {
         localStorage.removeItem('scanHistory');
-        scanHistoryText.textContent = "Belum ada riwayat.";
+        scanHistoryText.textContent = 'Belum ada riwayat.';
       }
     }
 
     function toggleDarkMode() {
-      document.body.classList.toggle("dark");
-      const isDark = document.body.classList.contains("dark");
-      darkModeBtn.innerHTML = isDark
-        ? '<i data-feather="sun"></i>'
-        : '<i data-feather="moon"></i>';
-      feather.replace();
+      document.body.classList.toggle('dark');
+      darkModeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
     }
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -324,8 +299,9 @@
       setTimeout(() => beepSound.play(), 300);
     }
     function startCamera() {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: 'environment' } })
+        .then((stream) => {
           video.srcObject = stream;
           video.play();
           codeReader.decodeFromVideoDevice(null, video, (result, err) => {
@@ -341,7 +317,7 @@
             }
           });
         })
-        .catch(err => {
+        .catch((err) => {
           parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
     }
