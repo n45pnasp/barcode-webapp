@@ -125,7 +125,6 @@
       "ID": "BATIK AIR",
       "IU": "SUPER AIR JET",
       "QG": "CITILINK"
-      // Bisa ditambah lagi sesuai kebutuhan
     };
 
     function playBeepTwice() {
@@ -139,7 +138,6 @@
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    // Parsing boarding pass data sesuai prosedur Anda
     function parseBoardingPass(text) {
       const parts = text.trim().split(/\s+/).reverse();
       if (parts.length < 6) return "⚠️ Data tidak lengkap.";
@@ -147,7 +145,7 @@
       const [part6, part5, part4, part3, part2, part1] = parts;
 
       // Nama
-      const nameRaw = part1.slice(2); // Hapus M1
+      const nameRaw = part1.slice(2);
       const [last, first] = nameRaw.split('/');
       const fullName = first?.includes(' ') ? `${first} ${last}` : `${first?.replace(/_/g, ' ')} ${last}`;
 
@@ -155,24 +153,27 @@
       const julian = parseInt(part5.slice(0, 3));
       const date = julianToDate(julian, new Date().getFullYear());
 
-      // Seat: huruf ke 5 sampai 8 di part5 (index 4-7)
+      // Seat
       const seatNumber = part5.substring(4, 8);
 
       // Route
       const routeRaw = part3.slice(0, 6);
-      const route = `${routeRaw.slice(0, 3)} → ${routeRaw.slice(3, 6)}`;
+      const origin = routeRaw.slice(0, 3);
+      const destination = routeRaw.slice(3, 6);
+      const route = `${origin} → ${destination}`;
 
-      // Maskapai hanya nama, tanpa kode
+      // Airline Code dari 2 huruf pertama flight code
+      const airlineCode = part4.slice(0, 2);
       const airlineName = airlineMap[airlineCode] || airlineCode;
 
-      // Flight: gabung kode maskapai + spasi + part4
-      const flightCode = `${airlineCode} ${part4}`;
+      // Flight Number
+      const flightCode = `${airlineCode} ${part4.slice(2)}`;
 
-      // Format output string
+      // Return formatted output
       return `
 ✈️ Nama       : ${fullName}
-📅 Tanggal    : ${flightDate}
-🛫 Rute       : ${origin} → ${destination}
+📅 Tanggal    : ${date}
+🛫 Rute       : ${route}
 🛩️ Maskapai   : ${airlineName}
 🎫 Flight     : ${flightCode}
 💺 No Kursi   : ${seatNumber}
@@ -183,7 +184,7 @@
       const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
       const timestamp = new Date().toLocaleString('id-ID');
       history.unshift({ text, timestamp });
-      if (history.length > 50) history.pop(); // batasi max 50 history
+      if (history.length > 50) history.pop();
       localStorage.setItem('scanHistory', JSON.stringify(history));
       renderHistory();
     }
