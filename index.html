@@ -48,24 +48,6 @@
       white-space: pre-line;
       line-height: 1.6;
     }
-    .text span {
-      font-weight: 600;
-      display: inline-block;
-      width: 130px;
-    }
-    #historyContainer {
-      display: none;
-    }
-    .toggle-btn {
-      font-size: 0.9rem;
-      color: #007bff;
-      cursor: pointer;
-      float: right;
-    }
-    .history-item {
-      font-size: 0.95rem;
-      margin-top: 6px;
-    }
   </style>
 </head>
 <body>
@@ -78,24 +60,12 @@
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <div class="card">
-    <div class="label">📝 History Scan
-      <span class="toggle-btn" id="toggleHistory">Tampilkan</span>
-    </div>
-    <div id="historyContainer">
-      <div id="historyList"></div>
-    </div>
-  </div>
-
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
-    const historyList = document.getElementById('historyList');
-    const historyContainer = document.getElementById('historyContainer');
-    const toggleHistory = document.getElementById('toggleHistory');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
@@ -111,76 +81,46 @@
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    function extractNamaLengkap(barcodeRaw) {
-      const namaRaw = barcodeRaw.substring(2, barcodeRaw.indexOf(" ", 2)).trim(); // M1 dihapus
-      const [lastName, firstNames] = namaRaw.split("/");
-      if (!firstNames || !lastName) return namaRaw;
-      return `${firstNames.replace(/_/g, " ")} ${lastName}`;
-    }
-
     function parseBarcode(text) {
-      if (text.startsWith("M1")) {
-        const parts = text.split(" ");
-        if (parts.length < 6) {
-          return "⚠️ Format tidak dikenali atau data tidak lengkap.";
-        }
+      if (!text.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
 
-        const namaLengkap = extractNamaLengkap(text);
+      const parts = text.split(" ");
+      if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
-        const bandaraMaskapai = parts[3];
-        const asal = bandaraMaskapai.slice(0, 3);
-        const tujuan = bandaraMaskapai.slice(3, 6);
-        const kodeMaskapai = bandaraMaskapai.slice(6);
+      // Nama
+      const namaField = parts[0].substring(2); // M1 dihapus
+      const [lastName, firstNames] = namaField.split("/");
+      const fullName = `${firstNames} ${lastName}`.replace(/_/g, ' ').trim();
 
-        const nomorPenerbangan = parts[4];
-        const noKursiSource = parts[5];
-        const noKursi = noKursiSource.substring(4, 8);
-        const julian = parseInt(noKursiSource.substring(0, 3));
-        const tanggal = julianToDate(julian, new Date().getFullYear());
+      // Rute dan maskapai
+      const routeAndAirline = parts[3];
+      const origin = routeAndAirline.slice(0, 3);
+      const destination = routeAndAirline.slice(3, 6);
+      const airlineCode = routeAndAirline.slice(6);
 
-        const maskapaiMap = {
-          "IU": "SUPER AIR JET IU",
-          "ID": "BATIK AIR ID",
-          "JT": "LION AIR JT",
-          "GA": "GARUDA INDONESIA GA",
-          "QG": "CITILINK QG"
-        };
+      const airlineMap = {
+        "IU": "SUPER AIR JET",
+        "ID": "BATIK AIR"
+      };
+      const airlineName = airlineMap[airlineCode] || airlineCode;
 
-        const namaMaskapai = maskapaiMap[kodeMaskapai] || kodeMaskapai;
+      // Nomor penerbangan
+      const flightNumber = parts[4];
 
-        return `
-✈️ <span>Nama</span>: ${namaLengkap}
-🛫 <span>Rute</span>: ${asal} → ${tujuan}
-🛩️ <span>Maskapai</span>: ${namaMaskapai} ${nomorPenerbangan}
-📅 <span>Tanggal</span>: ${tanggal}
-💺 <span>No Kursi</span>: ${noKursi}
-        `.trim();
-      }
-      return `✅ Detected: ${text}`;
-    }
+      // Kursi dan tanggal
+      const seatAndDate = parts[5];
+      const julianDay = parseInt(seatAndDate.substring(0, 3));
+      const seatNumber = seatAndDate.substring(4, 8);
+      const year = new Date().getFullYear();
+      const flightDate = julianToDate(julianDay, year);
 
-    function addToHistory(rawText) {
-      const waktu = new Date();
-      const jam = waktu.toLocaleTimeString('id-ID');
-
-      const namaLengkap = extractNamaLengkap(rawText);
-
-      const parts = rawText.split(" ");
-      const ruteMaskapai = parts[3];
-      const kodeMaskapai = ruteMaskapai.slice(6);
-      const julian = parseInt(parts[5].substring(0, 3));
-      const tanggal = julianToDate(julian, new Date().getFullYear());
-
-      const historyItem = document.createElement("div");
-      historyItem.className = "history-item";
-      historyItem.innerHTML = `• ${jam} — 👤 ${namaLengkap} | ✈️ ${kodeMaskapai} | 📅 ${tanggal}`;
-      historyList.prepend(historyItem);
-    }
-
-    toggleHistory.onclick = () => {
-      const isVisible = historyContainer.style.display === "block";
-      historyContainer.style.display = isVisible ? "none" : "block";
-      toggleHistory.textContent = isVisible ? "Tampilkan" : "Sembunyikan";
+      return `
+✈️ Nama         : ${fullName}
+🛫 Rute         : ${origin} → ${destination}
+🛩️ Maskapai     : ${airlineName} (${airlineCode}) ${flightNumber}
+📅 Tanggal      : ${flightDate}
+💺 No Kursi     : ${seatNumber}
+      `.trim();
     }
 
     function startCamera() {
@@ -194,9 +134,8 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                parsedOutput.innerHTML = parseBarcode(scannedText);
+                parsedOutput.textContent = parseBarcode(scannedText);
                 playBeepTwice();
-                addToHistory(scannedText);
               }
             }
           });
