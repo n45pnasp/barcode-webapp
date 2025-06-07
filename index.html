@@ -56,7 +56,7 @@
       border-radius: 10px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
     .btn:hover {
       background: #3f7fd2;
@@ -77,6 +77,7 @@
   </div>
 
   <button class="btn" onclick="toggleHistory()">📚 Tampilkan Riwayat Scan</button>
+  <button class="btn" onclick="clearHistory()">🗑️ Hapus Riwayat Scan</button>
 
   <div class="card" id="historyCard">
     <div class="label">📜 Riwayat Scan</div>
@@ -186,6 +187,13 @@
         historyCard.style.display = 'block';
       } else {
         historyCard.style.display = 'none';
+      }
+    }
+
+    function clearHistory() {
+      if (confirm("Yakin ingin menghapus semua riwayat scan?")) {
+        localStorage.removeItem('scanHistory');
+        scanHistoryText.textContent = "Belum ada riwayat.";
       }
     }
 
