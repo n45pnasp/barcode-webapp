@@ -21,7 +21,7 @@
     h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       margin-bottom: 20px;
@@ -31,7 +31,7 @@
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 16px;
-      max-width: 360px;
+      max-width: 380px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
@@ -106,20 +106,16 @@
 
       const [part6, part5, part4, part3, part2, part1] = parts;
 
-      // Nama
-      const nameRaw = part1.slice(2); // Hapus M1
+      const nameRaw = part1.slice(2);
       const [last, first] = nameRaw.split('/');
       const fullName = first?.includes(' ') ? `${first} ${last}` : `${first?.replace(/_/g, ' ')} ${last}`;
 
-      // Julian Date → Tanggal
       const julian = parseInt(part5.slice(0, 3));
       const date = julianToDate(julian, new Date().getFullYear());
 
-      // Route
       const routeRaw = part3.slice(0, 6);
       const route = `${routeRaw.slice(0, 3)} → ${routeRaw.slice(3, 6)}`;
 
-      // Maskapai
       const airlineCode = part3.slice(-2);
       const airlineMap = {
         "ID": "BATIK AIR",
@@ -130,10 +126,7 @@
       };
       const airline = airlineMap[airlineCode] || airlineCode;
 
-      // Flight
       const flight = `${airlineCode} ${part4}`;
-
-      // Seat
       const seat = part5.slice(4, 8);
 
       return `
@@ -141,8 +134,8 @@
 📅 Tanggal  : ${date}
 🛫 Rute     : ${route}
 🛩️ Maskapai : ${airline}
-💺 No Kursi : ${seat}
-🔢 Flight   : ${flight}`.trim();
+🔢 Flight   : ${flight}
+💺 No Kursi : ${seat}`.trim();
     }
 
     function saveScanToHistory(text) {
@@ -169,14 +162,15 @@
       navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       })
       .then(stream => {
         video.srcObject = stream;
         video.setAttribute("playsinline", true);
         video.play();
+
         codeReader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result) {
             const scannedText = result.getText();
