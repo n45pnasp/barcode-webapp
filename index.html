@@ -113,31 +113,50 @@
 
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
-        const parts = text.split(" ");
+        const parts = text.split(/[\s\n]+/);
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
-        // Parsing nama penumpang
-        const namaRaw = parts[0].substring(2); // "PUTRO/NOVAN_ANDRIAN"
-        const [lastName, firstNamesRaw] = namaRaw.split("/");
-        const firstNames = firstNamesRaw.replace(/_/g, " ");
-        // Gabungkan dengan urutan: nama depan + nama belakang
-        const namaLengkap = `${firstNames} ${lastName}`.trim();
+        // Parsing nama penumpang yang benar
+        const namaPart = parts[0].substring(2); // "PUTRO/NOVAN_ANDRIAN"
+        const nameParts = namaPart.split('/');
+        let namaLengkap = '';
+        
+        if (nameParts.length === 2) {
+          const lastName = nameParts[0];
+          const firstName = nameParts[1].replace(/_/g, ' ');
+          namaLengkap = `${firstName} ${lastName}`;
+        } else {
+          namaLengkap = namaPart.replace(/_/g, ' ');
+        }
 
-        // Parsing info penerbangan
+        // Parsing rute penerbangan yang benar
         const ruteMaskapai = parts[2]; // "CGKBWXIU"
-        const asal = ruteMaskapai.slice(0, 3);
-        const tujuan = ruteMaskapai.slice(3, 6);
-        const kodeMaskapai = ruteMaskapai.slice(6);
+        const asal = ruteMaskapai.substring(0, 3); // 3 karakter pertama
+        const tujuan = ruteMaskapai.substring(3, 6); // 3 karakter berikutnya
+        const kodeMaskapai = ruteMaskapai.substring(6); // sisa karakter
+        
+        // Parsing nomor penerbangan
         const nomorPenerbangan = parts[3];
-        const infoKursi = parts[4];
-        const julian = parseInt(infoKursi.substring(0, 3));
-        const noKursi = infoKursi.substring(4, 8);
+        
+        // Parsing info kursi yang benar
+        const infoKursi = parts[4]; // "106Y020E0110"
+        const noKursi = infoKursi.substring(4, 8); // Ambil 4 karakter dari posisi 4
+        
+        // Parsing tanggal
+        const julianHari = parseInt(infoKursi.substring(0, 3));
         const tahun = new Date().getFullYear();
-        const tanggal = julianToDate(julian, tahun);
+        const tanggal = julianToDate(julianHari, tahun);
 
-        let namaMaskapai = kodeMaskapai;
-        if (kodeMaskapai === "IU") namaMaskapai = "SUPER AIR JET IU";
-        else if (kodeMaskapai === "ID") namaMaskapai = "BATIK AIR ID";
+        // Daftar maskapai
+        const maskapai = {
+          "IU": "SUPER AIR JET",
+          "ID": "BATIK AIR",
+          "GA": "GARUDA INDONESIA",
+          "QZ": "AIR ASIA",
+          "JT": "LION AIR"
+        };
+        
+        const namaMaskapai = maskapai[kodeMaskapai] || kodeMaskapai;
 
         return `
 ✈️ <span>Nama</span>: ${namaLengkap}
@@ -147,25 +166,35 @@
 💺 <span>No Kursi</span>: ${noKursi}
         `.trim();
       }
-      return `✅ Detected: ${text}`;
+      return `✅ Barcode terdeteksi: ${text}`;
     }
 
     function addToHistory(rawText) {
       const waktu = new Date();
       const jam = waktu.toLocaleTimeString('id-ID');
 
-      const parts = rawText.split(" ");
-      if (parts.length < 6) return; // skip jika format tidak lengkap
+      const parts = rawText.split(/[\s\n]+/);
+      if (parts.length < 6) return;
 
-      const namaRaw = parts[0].substring(2);
-      const [lastName, firstNamesRaw] = namaRaw.split("/");
-      const firstNames = firstNamesRaw.replace(/_/g, " ");
-      const namaLengkap = `${firstNames} ${lastName}`.trim();
+      // Parsing nama untuk history
+      const namaPart = parts[0].substring(2);
+      const nameParts = namaPart.split('/');
+      let namaLengkap = '';
+      
+      if (nameParts.length === 2) {
+        const lastName = nameParts[0];
+        const firstName = nameParts[1].replace(/_/g, ' ');
+        namaLengkap = `${firstName} ${lastName}`;
+      } else {
+        namaLengkap = namaPart.replace(/_/g, ' ');
+      }
 
+      // Parsing info lainnya untuk history
       const ruteMaskapai = parts[2];
-      const kodeMaskapai = ruteMaskapai.slice(6);
-      const julian = parseInt(parts[4].substring(0, 3));
-      const tanggal = julianToDate(julian, new Date().getFullYear());
+      const kodeMaskapai = ruteMaskapai.substring(6);
+      const infoKursi = parts[4];
+      const julianHari = parseInt(infoKursi.substring(0, 3));
+      const tanggal = julianToDate(julianHari, new Date().getFullYear());
 
       const historyItem = document.createElement("div");
       historyItem.className = "history-item";
