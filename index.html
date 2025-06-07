@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>📷 Barcode Scanner Boarding Pass (Parsing Sesuai Aturan)</title>
+  <title>📷 Barcode Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -18,7 +18,10 @@
       padding: 20px;
       color: #333;
     }
-    h1 { font-size: 1.5rem; margin-bottom: 16px; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
     video {
       width: 100%;
       max-width: 360px;
@@ -36,7 +39,7 @@
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
       white-space: pre-line;
       font-size: 1rem;
-      line-height: 1.6;
+      line-height: 1.5;
     }
     .label {
       font-weight: 600;
@@ -44,13 +47,13 @@
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <h1>📷 Barcode Scanner Boarding Pass</h1>
+  <h1>📷 Barcode Boarding Pass Scanner</h1>
   <video id="video" autoplay></video>
 
   <div class="card">
@@ -64,78 +67,69 @@
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
-
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
+
+    const airlineMap = {
+      "ID": "BATIK AIR",
+      "IU": "SUPER AIR JET",
+      "QG": "CITILINK",
+      // Tambah jika perlu
+    };
 
     function playBeepTwice() {
       beepSound.play();
       setTimeout(() => beepSound.play(), 300);
     }
 
-    // Konversi Julian date 4 karakter (3 digit hari + 1 digit kode tahun) ke tanggal Indonesia
-    function julianToDate(julianStr) {
-      if (julianStr.length !== 4) return "Format Julian tidak valid";
-      const dayOfYear = parseInt(julianStr.substring(0, 3));
-      const yearCode = julianStr[3];
-      // Mapping kode tahun, misal Y = 2025, bisa disesuaikan
-      const yearMap = {
-        "Y": 2025,
-        "X": 2024,
-        "Z": 2026,
-      };
-      const year = yearMap[yearCode] || new Date().getFullYear();
-      const date = new Date(year, 0, 1);
-      date.setDate(dayOfYear);
+    // Konversi Julian Day + tahun ke tanggal lengkap (dd MMMM yyyy)
+    function julianToDate(julianDay, year) {
+      const date = new Date(year, 0, 1); // 1 Jan tahun tersebut
+      date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    // Mapping kode maskapai ke nama
-    const maskapaiMap = {
-      "ID": "BATIK AIR",
-      "IU": "SUPER AIR JET",
-      "QG": "CITILINK"
-      // Bisa tambah kode lain jika ada
-    };
+    function parseBoardingPass(data) {
+      if (!data.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
 
-    function parseBarcode(text) {
-      if (!text.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
-
-      // Split maksimal 6 part berdasarkan spasi
-      const parts = text.trim().split(/ +/, 6);
+      // Split berdasarkan spasi, ambil 6 bagian saja
+      const parts = data.split(' ').slice(0, 6);
       if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
-      // 1. Nama: hapus M1, split "/"
-      const namaRaw = parts[0].substring(2);
-      const [data1, data2] = namaRaw.split("/");
-      if (!data1 || !data2) return "⚠️ Format nama tidak valid.";
-      const nama = `${data2} ${data1}`.replace(/_/g, ' ').trim();
+      // 1. Nama
+      const namaRaw = parts[0].substring(2); // hapus "M1"
+      const [part1, part2] = namaRaw.split("/");
+      const fullName = `${part2} ${part1}`.replace(/_/g, ' ').trim();
 
-      // 2. Tanggal: 4 huruf depan part 5 (index 4)
-      const tanggalJulianRaw = parts[4].substring(0,4);
-      const tanggal = julianToDate(tanggalJulianRaw);
+      // 2. Tanggal (Julian date + tahun)
+      const tanggalRaw = parts[4].substring(0, 4);
+      // Julian day = 3 digit angka, tahun = 4th char
+      const julianDay = parseInt(tanggalRaw.substring(0, 3), 10);
+      const yearChar = tanggalRaw.charAt(3);
+      // Tahun: jika Y berarti 2025 (sesuaikan bila perlu)
+      const year = (yearChar === 'Y') ? 2025 : 2025; // Bisa ditambah logika lain
 
-      // 3. Route: 6 huruf depan part 3 (index 2)
-      const routeRaw = parts[2].substring(0,6);
-      if (routeRaw.length < 6) return "⚠️ Format rute tidak valid.";
-      const route1 = routeRaw.substring(0,3);
-      const route2 = routeRaw.substring(3,6);
-      const route = `${route1} → ${route2}`;
+      const tanggal = julianToDate(julianDay, year);
 
-      // 4. Maskapai: 2 huruf terakhir part 3
-      const maskCode = parts[2].slice(-2);
-      const maskapai = maskapaiMap[maskCode] || maskCode;
+      // 3. Route (dari part 3, ambil 6 huruf depan, split 3-3)
+      const routeRaw = parts[2].substring(0, 6);
+      const routeOri = routeRaw.substring(0,3);
+      const routeDest = routeRaw.substring(3,6);
+      const route = `${routeOri} → ${routeDest}`;
 
-      // 5. Seat: huruf ke 5 sampai 8 part 5 (index 4..7)
-      const seat = parts[4].substring(4,8);
+      // 4. Maskapai (2 huruf terakhir part 3)
+      const maskapaiCode = parts[2].slice(-2);
+      const maskapaiName = airlineMap[maskapaiCode] || maskapaiCode;
 
-      return `
-✈️ Nama         : ${nama}
+      // 5. Seat (huruf ke 5 sampai 8 part 5, index 4-7)
+      const seat = parts[4].substring(4, 8);
+
+      // Buat output rapih
+      return `✈️ Nama         : ${fullName}
 🛫 Rute         : ${route}
-🛩️ Maskapai     : ${maskapai} (${maskCode})
+🛩️ Maskapai     : ${maskapaiName} (${maskapaiCode})
 📅 Tanggal      : ${tanggal}
-💺 No Kursi     : ${seat}
-      `.trim();
+💺 No Kursi     : ${seat}`;
     }
 
     function startCamera() {
@@ -150,7 +144,8 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                parsedOutput.textContent = parseBarcode(scannedText);
+                const parsed = parseBoardingPass(scannedText);
+                parsedOutput.textContent = parsed;
                 playBeepTwice();
               }
             }
