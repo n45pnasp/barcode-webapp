@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -10,15 +10,32 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f4f6f9, #e9edf2);
+      background: var(--bg-color);
+      color: var(--text-color);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 20px;
-      color: #333;
+      transition: all 0.3s ease;
     }
-    h1 { font-size: 1.5rem; margin-bottom: 20px; }
+    :root {
+      --bg-color: #f4f6f9;
+      --card-color: #fff;
+      --text-color: #333;
+      --btn-bg: linear-gradient(145deg, #e0e6ed, #f9fbfd);
+      --btn-text: #333;
+      --btn-hover: linear-gradient(145deg, #d1d9e6, #f9fbfd);
+    }
+    body.dark {
+      --bg-color: #1e1e2f;
+      --card-color: #2a2a40;
+      --text-color: #f0f0f0;
+      --btn-bg: linear-gradient(145deg, #2c2c45, #1f1f34);
+      --btn-text: #f0f0f0;
+      --btn-hover: linear-gradient(145deg, #1f1f34, #2c2c45);
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
       max-width: 360px;
@@ -27,18 +44,18 @@
       margin-bottom: 20px;
     }
     .card {
-      background-color: #fff;
+      background-color: var(--card-color);
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 16px;
       max-width: 360px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
     }
     .label {
       font-size: 1rem;
       font-weight: 600;
-      color: #4a4a4a;
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
@@ -48,20 +65,27 @@
       white-space: pre-line;
       line-height: 1.6;
     }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     .btn {
-      background: linear-gradient(145deg, #e0e6ed, #f9fbfd);
-      color: #333;
+      background: var(--btn-bg);
+      color: var(--btn-text);
       border: none;
       padding: 12px 20px;
       border-radius: 14px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 12px;
-      box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+      box-shadow: 6px 6px 12px rgba(0,0,0,0.2), -6px -6px 12px rgba(255,255,255,0.05);
       transition: all 0.2s ease;
+      flex: 1 1 auto;
     }
     .btn:hover {
-      background: linear-gradient(145deg, #d1d9e6, #f9fbfd);
+      background: var(--btn-hover);
     }
     #historyCard {
       display: none;
@@ -78,8 +102,11 @@
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <button class="btn" onclick="toggleHistory()">📚 Tampilkan Riwayat Scan</button>
-  <button class="btn" onclick="clearHistory()">🗑️ Hapus Riwayat Scan</button>
+  <div class="button-group">
+    <button class="btn" onclick="toggleHistory()">📜 Riwayat Scan</button>
+    <button class="btn" onclick="clearHistory()">🗑️ Hapus Riwayat</button>
+    <button class="btn" onclick="toggleDarkMode()">🌙/☀️</button>
+  </div>
 
   <div class="card" id="historyCard">
     <div class="label">📜 Riwayat Scan</div>
@@ -197,6 +224,10 @@
         localStorage.removeItem('scanHistory');
         scanHistoryText.textContent = "Belum ada riwayat.";
       }
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
     }
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
