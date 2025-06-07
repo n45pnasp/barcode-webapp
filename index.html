@@ -3,85 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Parser Barcode Boarding Pass</title>
+  <title>Scanner & Parser Barcode Boarding Pass</title>
   <style>
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-    }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f4f7fa;
-      margin: 0;
-      padding: 2em;
+      margin: 0; padding: 1.5em;
       color: #333;
+      display: flex; justify-content: center;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
     }
-
     .container {
-      max-width: 700px;
+      max-width: 720px;
       width: 100%;
       background: white;
-      padding: 2em 2.5em;
+      padding: 1.5em 2em;
       border-radius: 10px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
-
     h1 {
-      margin-top: 0;
-      font-weight: 700;
-      color: #007bff;
       text-align: center;
-      margin-bottom: 1.2em;
+      color: #007bff;
+      margin-bottom: 1rem;
     }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 0.3em;
-      color: #555;
-    }
-
-    textarea {
+    #reader {
       width: 100%;
-      min-height: 120px;
-      padding: 12px 15px;
-      font-family: monospace;
-      font-size: 1rem;
-      border: 1.5px solid #ccc;
-      border-radius: 6px;
-      resize: vertical;
-      transition: border-color 0.3s ease;
+      min-height: 300px;
+      margin-bottom: 1em;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgba(0,0,0,0.15);
     }
-    textarea:focus {
-      border-color: #007bff;
-      outline: none;
-    }
-
     button {
-      margin-top: 15px;
+      display: block;
+      margin: 0 auto 1.5em auto;
       background-color: #007bff;
       color: white;
       font-weight: 700;
-      font-size: 1rem;
       border: none;
-      padding: 12px 25px;
+      padding: 12px 28px;
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      width: 100%;
     }
     button:hover {
       background-color: #0056b3;
     }
-
-    .result {
-      margin-top: 2em;
-      overflow-x: auto;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -89,7 +56,6 @@
       border-radius: 6px;
       overflow: hidden;
     }
-
     th, td {
       padding: 12px 15px;
       border-bottom: 1px solid #e0e0e0;
@@ -102,144 +68,203 @@
       color: white;
       font-weight: 600;
     }
-
     tr:hover td {
       background-color: #f1f8ff;
     }
-
-    @media (max-width: 600px) {
-      th, td {
-        font-size: 0.85rem;
-        padding: 8px 10px;
-      }
-      button {
-        font-size: 0.9rem;
-        padding: 10px;
-      }
+    #log {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 1em;
+      min-height: 1.5em;
+      text-align: center;
     }
-
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Parser Barcode Boarding Pass</h1>
+<div class="container">
+  <h1>Scanner & Parser Barcode Boarding Pass</h1>
 
-    <label for="barcodeInput">Masukkan data hasil scan barcode boarding pass (setiap baris satu data):</label>
-    <textarea id="barcodeInput" placeholder="Tempel data barcode di sini..."></textarea>
-    <button onclick="parseData()">Parse Data</button>
+  <div id="reader"></div>
 
-    <div class="result" id="result"></div>
-  </div>
+  <div id="log">Arahkan kamera ke barcode boarding pass</div>
 
-  <script>
-    // Konversi Julian Day ke YYYY-MM-DD, tahun dari device
-    function julianToDate(julian) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const start = new Date(year, 0, 1);
-      const date = new Date(start.getTime() + (julian - 1) * 24 * 60 * 60 * 1000);
-      return date.toISOString().slice(0, 10);
+  <button id="startButton">Mulai Scan</button>
+  <button id="stopButton" disabled>Berhenti Scan</button>
+
+  <div id="result"></div>
+</div>
+
+<!-- html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+
+<script>
+  const resultContainer = document.getElementById('result');
+  const log = document.getElementById('log');
+  const startButton = document.getElementById('startButton');
+  const stopButton = document.getElementById('stopButton');
+
+  let html5QrcodeScanner;
+  let scanning = false;
+
+  function julianToDate(julian) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const start = new Date(year, 0, 1);
+    const date = new Date(start.getTime() + (julian - 1) * 24 * 60 * 60 * 1000);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function parseLine(line) {
+    if (!line.trim()) return null;
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 5) return null;
+
+    const seat = parts.pop();
+    const flightInfo = parts.pop();
+
+    const flightNumberRaw = flightInfo.slice(3, 8);
+    const julianDay = parseInt(flightInfo.slice(0, 3), 10);
+    const date = julianToDate(julianDay);
+
+    const routeRaw = parts.pop();
+    const routeClean = routeRaw.slice(0, -2);
+    const maskapaiCode = routeRaw.slice(-2);
+
+    const maskapaiMap = {
+      'UI': 'SUPER AIR JET',
+      'ID': 'BATIK AIR',
+    };
+
+    const maskapai = maskapaiMap[maskapaiCode] || 'UNKNOWN';
+
+    let route;
+    if (routeClean.length === 6) {
+      route = routeClean.slice(0, 3) + ' → ' + routeClean.slice(3, 6);
+    } else {
+      route = routeClean;
     }
 
-    // Parsing satu baris data boarding pass
-    function parseLine(line) {
-      if (!line.trim()) return null;
+    parts.pop(); // discard booking code
 
-      const parts = line.trim().split(/\s+/);
+    const nameStr = parts.join(' ');
+    const nameParts = nameStr.split('/');
+    if (nameParts.length < 2) return null;
 
-      if (parts.length < 5) return null; // cek minimal data
+    const lastNameRaw = nameParts[0].replace(/^M1/, '').trim();
+    const frontPartRaw = nameParts[1].trim();
 
-      // Ambil dari belakang
-      const seat = parts.pop();
-      const flightInfo = parts.pop();
+    const frontSplit = frontPartRaw.split(' ');
+    let firstName = frontSplit[0];
+    let title = '';
+    if (frontSplit.length > 1) {
+      title = frontSplit.slice(1).join(' ');
+    }
 
-      // Flight Number: huruf 4-8 flightInfo
-      const flightNumberRaw = flightInfo.slice(3, 8);
-      // Julian date: 3 digit depan flightInfo
-      const julianDay = parseInt(flightInfo.slice(0, 3), 10);
-      const date = julianToDate(julianDay);
+    const fullName = title ? `${firstName} ${title} ${lastNameRaw}` : `${firstName} ${lastNameRaw}`;
 
-      // Route dan maskapai
-      const routeRaw = parts.pop();
-      const routeClean = routeRaw.slice(0, -2);
-      const maskapaiCode = routeRaw.slice(-2);
+    return {
+      Nama: fullName,
+      Tanggal: date,
+      Route: route,
+      Maskapai: maskapai,
+      Seat: flightNumberRaw,
+    };
+  }
 
-      const maskapaiMap = {
-        'UI': 'SUPER AIR JET',
-        'ID': 'BATIK AIR',
-      };
+  function displayResult(data) {
+    if (!data) {
+      resultContainer.innerHTML = '<p style="color: #d33;">Data barcode tidak valid.</p>';
+      return;
+    }
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Tanggal</th>
+            <th>Route</th>
+            <th>Maskapai</th>
+            <th>Seat</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${data.Nama}</td>
+            <td>${data.Tanggal}</td>
+            <td>${data.Route}</td>
+            <td>${data.Maskapai}</td>
+            <td>${data.Seat}</td>
+          </tr>
+        </tbody>
+      </table>`;
+    resultContainer.innerHTML = html;
+  }
 
-      const maskapai = maskapaiMap[maskapaiCode] || 'UNKNOWN';
+  function onScanSuccess(decodedText, decodedResult) {
+    log.textContent = 'Data barcode terbaca, parsing...';
+    scanning = false;
+    html5QrcodeScanner.stop().then(() => {
+      log.textContent = 'Scan berhenti.';
+      startButton.disabled = false;
+      stopButton.disabled = true;
 
-      // Split route menjadi asal → tujuan
-      let route;
-      if (routeClean.length === 6) {
-        route = routeClean.slice(0, 3) + ' → ' + routeClean.slice(3, 6);
+      const parsed = parseLine(decodedText);
+      displayResult(parsed);
+    }).catch(err => {
+      log.textContent = 'Gagal berhenti scan: ' + err;
+    });
+  }
+
+  function onScanFailure(error) {
+    // bisa tampilkan log jika mau, tapi biasanya terlalu sering
+    // console.warn(`Scan gagal: ${error}`);
+  }
+
+  startButton.addEventListener('click', () => {
+    if (scanning) return;
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        const cameraId = cameras[0].id;
+        html5QrcodeScanner.start(
+          cameraId,
+          {
+            fps: 10,
+            qrbox: 250
+          },
+          onScanSuccess,
+          onScanFailure
+        ).then(() => {
+          log.textContent = 'Menyala, arahkan kamera ke barcode boarding pass...';
+          scanning = true;
+          startButton.disabled = true;
+          stopButton.disabled = false;
+          resultContainer.innerHTML = '';
+        }).catch(err => {
+          log.textContent = 'Gagal mulai scan: ' + err;
+        });
       } else {
-        route = routeClean;
+        log.textContent = 'Tidak ditemukan kamera.';
       }
+    }).catch(err => {
+      log.textContent = 'Error akses kamera: ' + err;
+    });
+  });
 
-      // Booking code (discarded if not needed)
-      const bookingCode = parts.pop();
-
-      // Nama (gabungkan sisa parts), format: M1LASTNAME/FIRSTNAME [TITLE?]
-      const nameStr = parts.join(' ');
-      const nameParts = nameStr.split('/');
-      if (nameParts.length < 2) return null;
-
-      const lastNameRaw = nameParts[0].replace(/^M1/, '').trim();
-      const frontPartRaw = nameParts[1].trim();
-
-      // Cek ada title MR, MRS, dsb di frontPart
-      const frontSplit = frontPartRaw.split(' ');
-      let firstName = frontSplit[0];
-      let title = '';
-      if (frontSplit.length > 1) {
-        title = frontSplit.slice(1).join(' ');
-      }
-
-      // Nama final: firstName + title (jika ada) + lastName
-      const fullName = title ? `${firstName} ${title} ${lastNameRaw}` : `${firstName} ${lastNameRaw}`;
-
-      return {
-        Nama: fullName,
-        Tanggal: date,
-        Route: route,
-        Maskapai: maskapai,
-        Seat: flightNumberRaw,
-      };
-    }
-
-    // Fungsi parse seluruh textarea
-    function parseData() {
-      const input = document.getElementById('barcodeInput').value.trim();
-      const lines = input.split('\n');
-      const results = lines.map(parseLine).filter(r => r !== null);
-
-      const resultContainer = document.getElementById('result');
-
-      if (results.length === 0) {
-        resultContainer.innerHTML = '<p style="color: #d33;">Data tidak valid atau kosong.</p>';
-        return;
-      }
-
-      // Buat tabel hasil
-      let html = '<table><thead><tr><th>Nama</th><th>Tanggal</th><th>Route</th><th>Maskapai</th><th>Seat</th></tr></thead><tbody>';
-      results.forEach(r => {
-        html += `<tr>
-          <td>${r.Nama}</td>
-          <td>${r.Tanggal}</td>
-          <td>${r.Route}</td>
-          <td>${r.Maskapai}</td>
-          <td>${r.Seat}</td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-
-      resultContainer.innerHTML = html;
-    }
-  </script>
+  stopButton.addEventListener('click', () => {
+    if (!scanning) return;
+    html5QrcodeScanner.stop().then(() => {
+      log.textContent = 'Scan berhenti.';
+      scanning = false;
+      startButton.disabled = false;
+      stopButton.disabled = true;
+    }).catch(err => {
+      log.textContent = 'Gagal berhenti scan: ' + err;
+    });
+  });
+</script>
 
 </body>
 </html>
