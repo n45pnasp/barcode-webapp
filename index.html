@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -151,8 +151,13 @@
       const year = new Date().getFullYear();
       const tanggal = julianToDate(julianDay, year);
 
+      const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      const tanggalFormatted = (tanggal !== today)
+        ? `<span style="color:red;font-weight:bold">${tanggal}</span>`
+        : tanggal;
+
       return `✈️ Nama         : ${fullName}
-📅 Tanggal      : ${tanggal}
+📅 Tanggal      : ${tanggalFormatted}
 🛫 Rute         : ${route}
 🛩️ Maskapai     : ${airlineName}
 ✈️ Flight       : ${fullFlight}
@@ -172,7 +177,7 @@
         scanHistoryText.textContent = "Belum ada riwayat.";
         return;
       }
-      scanHistoryText.textContent = history.map((h, i) => `#${i + 1} (${h.time})\n${h.text}`).join('\n\n');
+      scanHistoryText.innerHTML = history.map((h, i) => `#${i + 1} (${h.time})<br>${h.text}`).join('<br><br>');
     }
 
     function toggleHistory() {
@@ -203,15 +208,8 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-
-                let parsed;
-                if (scannedText.startsWith("M1")) {
-                  parsed = parseBoardingPass(scannedText);
-                } else {
-                  parsed = `✅ Data QR/PDF417 berhasil dipindai:\n\n${scannedText}`;
-                }
-
-                parsedOutput.textContent = parsed;
+                const parsed = parseBoardingPass(scannedText);
+                parsedOutput.innerHTML = parsed;
                 saveScanToHistory(parsed);
                 playBeepTwice();
               }
