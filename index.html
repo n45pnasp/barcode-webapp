@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>📷 Boarding Pass Scanner & Parser</title>
+  <title>📷 Barcode Scanner Boarding Pass</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -13,26 +13,18 @@
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
+      align-items: center;
       padding: 20px;
       color: #333;
     }
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 16px;
-      color: #007bff;
-      font-weight: 700;
-      text-align: center;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
       max-width: 360px;
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       margin-bottom: 20px;
-      background: #000;
     }
     .card {
       background-color: #fff;
@@ -42,40 +34,28 @@
       max-width: 360px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-      min-height: 140px;
+      white-space: pre-line;
+      font-size: 1rem;
+      line-height: 1.6;
     }
     .label {
-      font-size: 1.1rem;
       font-weight: 600;
       color: #4a4a4a;
       margin-bottom: 12px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 6px;
-      user-select: none;
-    }
-    .text {
-      font-size: 1rem;
-      white-space: pre-line;
-      line-height: 1.6;
-      color: #222;
-    }
-    .text span {
-      font-weight: 600;
-      display: inline-block;
-      width: 100px;
-      color: #007bff;
+      font-size: 1.1rem;
     }
   </style>
 </head>
 <body>
 
-  <h1>📷 Boarding Pass Scanner & Parser</h1>
-
+  <h1>📷 Barcode Scanner Boarding Pass</h1>
   <video id="video" autoplay></video>
 
   <div class="card">
     <div class="label">📄 Informasi Boarding Pass</div>
-    <div class="text" id="parsedOutput">Menunggu scan...</div>
+    <div id="parsedOutput">Menunggu scan...</div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -93,76 +73,60 @@
       setTimeout(() => beepSound.play(), 300);
     }
 
-    function julianToDate(julianDay, year) {
-      const date = new Date(year, 0);
-      date.setDate(julianDay);
-      return date.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+    // Konversi Julian day + kode tahun ke tanggal (YYYY-MM-DD)
+    function julianToDate(julianStr) {
+      const dayOfYear = parseInt(julianStr.substring(0, 3));
+      const yearCode = julianStr.substring(3);
+      const yearMap = { "Y": 2025 };  // Bisa kamu sesuaikan sesuai kode tahun
+      const year = yearMap[yearCode] || new Date().getFullYear();
+      const date = new Date(year, 0, 1);
+      date.setDate(date.getDate() + dayOfYear - 1);
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
+    // Mapping kode maskapai ke nama
+    const maskapaiMap = {
+      "ID": "BATIK AIR",
+      "IU": "SUPER AIR JET",
+      "QG": "CITILINK"
+    };
+
+    // Parsing data barcode sesuai aturan yang kamu berikan
     function parseBarcode(text) {
-      const trimmedText = text.trim();
-      // Pisah spasi semua token
-      const tokens = trimmedText.split(/\s+/);
-      if (tokens.length < 6) return `❌ Data barcode kurang lengkap.`;
+      if (!text.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
 
-      // Ambil 6 data dari belakang
-      const data6 = tokens[tokens.length - 1];
-      const data5 = tokens[tokens.length - 2];
-      const data4 = tokens[tokens.length - 3];
-      const data3 = tokens[tokens.length - 4];
-      const data2 = tokens[tokens.length - 5];
+      // Split maksimal 6 bagian (5 spasi)
+      const parts = text.split(/ +/, 6);
+      if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
-      // Sisanya dari awal sampai sebelum data2 → data1
-      const data1Arr = tokens.slice(0, tokens.length - 5);
-      const data1 = data1Arr.join(' ');
+      // 1. Nama
+      const namaRaw = parts[0].substring(2); // hilangkan M1
+      const [data1, data2] = namaRaw.split("/");
+      const nama = `${data2} ${data1}`.replace(/_/g, ' ').trim();
 
-      // Parse nama dari data1
-      if (!data1.startsWith("M1")) return `❌ Format nama barcode tidak sesuai.`;
+      // 2. Tanggal - ambil 4 karakter depan part 5
+      const tanggalJulian = parts[4].substring(0,4);
+      const tanggal = julianToDate(tanggalJulian);
 
-      // Hapus M1, split di "/"
-      const afterM1 = data1.substring(2).trim();
-      const slashIndex = afterM1.indexOf('/');
-      if (slashIndex < 0) return `❌ Format nama barcode tidak sesuai.`;
+      // 3. Route - ambil 6 huruf depan part 3, bagi 2x3 huruf
+      const routeRaw = parts[2].substring(0,6);
+      const route1 = routeRaw.substring(0,3);
+      const route2 = routeRaw.substring(3,6);
+      const route = `${route1} → ${route2}`;
 
-      const beforeSlash = afterM1.substring(0, slashIndex).trim();
-      const afterSlash = afterM1.substring(slashIndex + 1).trim();
+      // 4. Maskapai - 2 huruf terakhir part 3
+      const maskCode = parts[2].slice(-2);
+      const maskapai = maskapaiMap[maskCode] || maskCode;
 
-      // Nama final = afterSlash + spasi + beforeSlash
-      const nama = `${afterSlash} ${beforeSlash}`;
-
-      // ROUTE
-      // Hilangkan 2 huruf dari belakang (kode maskapai)
-      // Buang "ID"
-      const routeRaw = data2.slice(0, -2).replace(/ID/g, '');
-      const mid = Math.floor(routeRaw.length / 2);
-      const route = `${routeRaw.slice(0, mid)} → ${routeRaw.slice(mid)}`;
-
-      // MASKAPAI
-      const kodeMaskapai = data2.slice(-2).toUpperCase();
-      let maskapai = '';
-      if (kodeMaskapai === 'UI') maskapai = 'SUPER AIR JET';
-      else if (kodeMaskapai === 'ID') maskapai = 'BATIK AIR';
-      else maskapai = kodeMaskapai;
-
-      // SEAT
-      const seat = data4.substring(3, 8);
-
-      // TANGGAL
-      const julianMatch = data4.match(/^(\d{3})/);
-      const julianDay = julianMatch ? parseInt(julianMatch[1], 10) : null;
-      const tahun = new Date().getFullYear();
-      const tanggal = julianDay ? julianToDate(julianDay, tahun) : 'Tanggal tidak valid';
+      // 5. Seat - huruf ke 5 sampai 8 part 5 (index 4..7)
+      const seat = parts[4].substring(4,8);
 
       return `
-<span>Nama</span>: ${nama}
-<span>Tanggal</span>: ${tanggal}
-<span>Route</span>: ${route}
-<span>Maskapai</span>: ${maskapai}
-<span>Seat</span>: ${seat}
+✈️ Nama         : ${nama}
+🛫 Rute         : ${route}
+🛩️ Maskapai     : ${maskapai} (${maskCode})
+📅 Tanggal      : ${tanggal}
+💺 No Kursi     : ${seat}
       `.trim();
     }
 
@@ -178,7 +142,7 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                parsedOutput.innerHTML = parseBarcode(scannedText);
+                parsedOutput.textContent = parseBarcode(scannedText);
                 playBeepTwice();
               }
             }
