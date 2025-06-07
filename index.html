@@ -127,8 +127,8 @@
     }
 
     function isBookingCode(str) {
-      // Cek pola kode booking: 6 huruf kapital tanpa angka (misal EDYWBMQ)
-      return /^[A-Z]{6}$/.test(str);
+      // Cek kode booking: 6 karakter alfanumerik uppercase (bisa huruf/angka)
+      return /^[A-Z0-9]{6}$/.test(str);
     }
 
     function parseBarcode(text) {
@@ -139,10 +139,12 @@
         const namaRaw = parts[0].substring(2);
         const [lastName, ...firstNamesArr] = namaRaw.split("/");
 
-        // Filter bagian setelah nama untuk menghilangkan kode booking
-        const additionalFirstNames = parts
-          .slice(1, 3)
-          .filter((s) => !isBookingCode(s));
+        // Ambil nama tambahan di parts setelah index 0, tapi stop kalau ketemu kode booking
+        let additionalFirstNames = [];
+        for (let i = 1; i < parts.length; i++) {
+          if (isBookingCode(parts[i])) break;
+          additionalFirstNames.push(parts[i]);
+        }
 
         const firstNamesFull = [...firstNamesArr, ...additionalFirstNames]
           .join(" ")
@@ -185,9 +187,11 @@
       const namaRaw = parts[0].substring(2);
       const [lastName, ...firstNamesArr] = namaRaw.split("/");
 
-      const additionalFirstNames = parts
-        .slice(1, 3)
-        .filter((s) => !isBookingCode(s));
+      let additionalFirstNames = [];
+      for (let i = 1; i < parts.length; i++) {
+        if (isBookingCode(parts[i])) break;
+        additionalFirstNames.push(parts[i]);
+      }
 
       const firstNamesFull = [...firstNamesArr, ...additionalFirstNames]
         .join(" ")
