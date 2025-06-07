@@ -111,6 +111,13 @@
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
+    function extractNamaLengkap(barcodeRaw) {
+      const namaRaw = barcodeRaw.substring(2, barcodeRaw.indexOf(" ", 2)).trim(); // M1 dihapus
+      const [lastName, firstNames] = namaRaw.split("/");
+      if (!firstNames || !lastName) return namaRaw;
+      return `${firstNames.replace(/_/g, " ")} ${lastName}`;
+    }
+
     function parseBarcode(text) {
       if (text.startsWith("M1")) {
         const parts = text.split(" ");
@@ -118,9 +125,7 @@
           return "⚠️ Format tidak dikenali atau data tidak lengkap.";
         }
 
-        const namaRaw = parts[0].substring(2);
-        const [lastName, firstNames] = namaRaw.split("/");
-        const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
+        const namaLengkap = extractNamaLengkap(text);
 
         const bandaraMaskapai = parts[3];
         const asal = bandaraMaskapai.slice(0, 3);
@@ -158,9 +163,7 @@
       const waktu = new Date();
       const jam = waktu.toLocaleTimeString('id-ID');
 
-      const namaRaw = rawText.substring(2, rawText.indexOf(" ", 2));
-      const [lastName, firstNames] = namaRaw.split("/");
-      const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
+      const namaLengkap = extractNamaLengkap(rawText);
 
       const parts = rawText.split(" ");
       const ruteMaskapai = parts[3];
