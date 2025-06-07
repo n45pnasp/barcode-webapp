@@ -146,30 +146,21 @@
 
       const [part6, part5, part4, part3, part2, part1] = parts;
 
-      // Nama: ambil dari part1, hapus M1, split /, gabungkan firstName + spasi + lastName
-      const nameRaw = part1.slice(2); // Hilangkan "M1"
-      const slashIndex = nameRaw.indexOf('/');
-      if (slashIndex === -1) return "❌ Format nama tidak sesuai.";
-      const lastName = nameRaw.substring(0, slashIndex).trim();
-      const firstName = nameRaw.substring(slashIndex + 1).trim();
-      const fullName = `${firstName} ${lastName}`;
+      // Nama
+      const nameRaw = part1.slice(2); // Hapus M1
+      const [last, first] = nameRaw.split('/');
+      const fullName = first?.includes(' ') ? `${first} ${last}` : `${first?.replace(/_/g, ' ')} ${last}`;
 
-      // Tanggal: 4 huruf depan part5 = julian date (3 digit) + 1 huruf
-      // Julian day = 3 digit awal part5
-      const julianDayStr = part5.substring(0, 3);
-      const julianDay = parseInt(julianDayStr, 10);
-      if (isNaN(julianDay)) return "❌ Format tanggal salah.";
-      const year = new Date().getFullYear();
-      const flightDate = julianToDate(julianDay, year);
+      // Julian Date → Tanggal
+      const julian = parseInt(part5.slice(0, 3));
+      const date = julianToDate(julian, new Date().getFullYear());
 
       // Seat: huruf ke 5 sampai 8 di part5 (index 4-7)
       const seatNumber = part5.substring(4, 8);
 
-      // Route dan Maskapai
-      // part3 6 huruf depan, split 3 dan 3
-      const origin = part3.substring(0, 3);
-      const destination = part3.substring(3, 6);
-      const airlineCode = part3.substring(6); // sisanya setelah 6 huruf
+      // Route
+      const routeRaw = part3.slice(0, 6);
+      const route = `${routeRaw.slice(0, 3)} → ${routeRaw.slice(3, 6)}`;
 
       // Maskapai hanya nama, tanpa kode
       const airlineName = airlineMap[airlineCode] || airlineCode;
