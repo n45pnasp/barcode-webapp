@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -86,7 +86,7 @@
     }
 
     function julianToDate(julianDay, year) {
-      const date = new Date(year, 0); // Jan 1
+      const date = new Date(year, 0);
       date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', {
         day: 'numeric',
@@ -96,28 +96,48 @@
     }
 
     function parseBarcode(text) {
-      if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
+      if (text.startsWith("M1")) {
         const parts = text.split(" ");
-        const nama = "NOVAN ANDRIAN PUTRO";
+        if (parts.length < 6) {
+          return "⚠️ Format tidak dikenali atau data tidak lengkap.";
+        }
+
+        const namaRaw = parts[0].substring(2); // "M1" dihapus
+        const nama = namaRaw.replace("/", " ");
+
         const bandaraMaskapai = parts[3];
         const bandaraAsal = bandaraMaskapai.slice(0, 3);
         const bandaraTujuan = bandaraMaskapai.slice(3, 6);
         const maskapaiCode = bandaraMaskapai.slice(6);
+
         const nomorPenerbangan = parts[4];
         const noKursiSource = parts[5];
         const noKursi = noKursiSource.substring(4, 8);
-        const julianDateRaw = parts[5].substring(0, 3);
+        const julianDateRaw = parseInt(noKursiSource.substring(0, 3));
         const tahun = new Date().getFullYear();
-        const tanggal = julianToDate(parseInt(julianDateRaw), tahun);
+        const tanggal = julianToDate(julianDateRaw, tahun);
 
-        let maskapai = maskapaiCode;
-        if (maskapaiCode === "IU") maskapai = "SUPER AIR JET IU";
-        else if (maskapaiCode === "ID") maskapai = "BATIK AIR ID";
+        const maskapaiMap = {
+          "IU": "SUPER AIR JET IU",
+          "ID": "BATIK AIR ID",
+          "JT": "LION AIR JT",
+          "GA": "GARUDA INDONESIA GA",
+          "QG": "CITILINK QG"
+        };
 
-        const penerbangan = `${bandaraAsal} to ${bandaraTujuan} dengan ${maskapai} ${nomorPenerbangan}`;
-        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n📅 Tanggal: ${tanggal}\n💺 No Kursi: ${noKursi}`;
+        const maskapai = maskapaiMap[maskapaiCode] || maskapaiCode;
+
+        return `
+✈️ Nama          : ${nama}
+🛫 Asal          : ${bandaraAsal}
+🛬 Tujuan        : ${bandaraTujuan}
+🛩️ Maskapai      : ${maskapai} ${nomorPenerbangan}
+📅 Tanggal       : ${tanggal}
+💺 Nomor Kursi   : ${noKursi}
+        `.trim();
       }
-      return `✅ Detected: ${text}`;
+
+      return `✅ Detected (tidak dikenali): ${text}`;
     }
 
     function startCamera() {
