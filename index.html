@@ -118,9 +118,9 @@
           return "⚠️ Format tidak dikenali atau data tidak lengkap.";
         }
 
-        const namaRaw = parts[0].substring(2); // Hapus "M1"
+        const namaRaw = parts[0].substring(2);
         const [lastName, firstNames] = namaRaw.split("/");
-        const namaLengkap = `${firstNames?.replace(/_/g, " ")} ${lastName}`;
+        const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
 
         const bandaraMaskapai = parts[3];
         const asal = bandaraMaskapai.slice(0, 3);
@@ -130,9 +130,8 @@
         const nomorPenerbangan = parts[4];
         const noKursiSource = parts[5];
         const noKursi = noKursiSource.substring(4, 8);
-        const julianDateRaw = parseInt(noKursiSource.substring(0, 3));
-        const tahun = new Date().getFullYear();
-        const tanggal = julianToDate(julianDateRaw, tahun);
+        const julian = parseInt(noKursiSource.substring(0, 3));
+        const tanggal = julianToDate(julian, new Date().getFullYear());
 
         const maskapaiMap = {
           "IU": "SUPER AIR JET IU",
@@ -159,10 +158,9 @@
       const waktu = new Date();
       const jam = waktu.toLocaleTimeString('id-ID');
 
-      const namaEndIndex = rawText.indexOf(" ", 2);
-      const namaRaw = rawText.substring(2, namaEndIndex);
+      const namaRaw = rawText.substring(2, rawText.indexOf(" ", 2));
       const [lastName, firstNames] = namaRaw.split("/");
-      const namaLengkap = `${firstNames?.replace(/_/g, " ")} ${lastName}`;
+      const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
 
       const parts = rawText.split(" ");
       const ruteMaskapai = parts[3];
@@ -177,13 +175,9 @@
     }
 
     toggleHistory.onclick = () => {
-      if (historyContainer.style.display === "none") {
-        historyContainer.style.display = "block";
-        toggleHistory.textContent = "Sembunyikan";
-      } else {
-        historyContainer.style.display = "none";
-        toggleHistory.textContent = "Tampilkan";
-      }
+      const isVisible = historyContainer.style.display === "block";
+      historyContainer.style.display = isVisible ? "none" : "block";
+      toggleHistory.textContent = isVisible ? "Tampilkan" : "Sembunyikan";
     }
 
     function startCamera() {
