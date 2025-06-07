@@ -104,108 +104,62 @@
     }
 
     function parseBarcode(text) {
-      // Pisah baris (kalau barcode multiline)
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const trimmedText = text.trim();
+      // Pisah spasi semua token
+      const tokens = trimmedText.split(/\s+/);
+      if (tokens.length < 6) return `❌ Data barcode kurang lengkap.`;
 
-      // Kita ambil line pertama (anggap satu boarding pass per barcode)
-      const line = lines[0];
-      if (!line.startsWith("M1")) {
-        return `❌ Format barcode tidak sesuai.`;
-      }
+      // Ambil 6 data dari belakang
+      const data6 = tokens[tokens.length - 1];
+      const data5 = tokens[tokens.length - 2];
+      const data4 = tokens[tokens.length - 3];
+      const data3 = tokens[tokens.length - 4];
+      const data2 = tokens[tokens.length - 5];
 
-      // Split berdasar spasi
-      const parts = line.split(/\s+/);
-      if (parts.length < 6) {
-        return `❌ Data barcode kurang lengkap.`;
-      }
+      // Sisanya dari awal sampai sebelum data2 → data1
+      const data1Arr = tokens.slice(0, tokens.length - 5);
+      const data1 = data1Arr.join(' ');
 
-      // Nama - ambil dari bagian sebelum spasi yang ada '/', gabungkan nama depan dan belakang sesuai aturan
-      // contoh: M1VALENCIA/VALENCIA MSEACIBZY ...
-      // ambil M1VALENCIA/VALENCIA MSEACIBZY sebagai nama, tapi sesuai instruksi gabungkan bagian belakang dan depan dengan spasi
+      // Parse nama dari data1
+      if (!data1.startsWith("M1")) return `❌ Format nama barcode tidak sesuai.`;
 
-      const rawName = parts.slice(0, parts.length - 4).join(' ');
-      // contoh: "M1PUTRO/NOVAN ANDRIAN"
-      // cara ambil:
-      // - hapus M1 dari awal
-      // - pisah sebelum dan sesudah '/'
-      // - gabungkan bagian setelah '/' dan sebelum '/' dengan spasi, bagian setelah '/' boleh mengandung spasi
-      // ex: "PUTRO/NOVAN ANDRIAN" → "NOVAN ANDRIAN PUTRO"
+      // Hapus M1, split di "/"
+      const afterM1 = data1.substring(2).trim();
+      const slashIndex = afterM1.indexOf('/');
+      if (slashIndex < 0) return `❌ Format nama barcode tidak sesuai.`;
 
-      let nama = '';
-      const idxSlash = rawName.indexOf('/');
-      if (idxSlash > 0) {
-        const beforeSlash = rawName.slice(2, idxSlash).trim(); // hapus M1 dan ambil sebelum slash
-        const afterSlash = rawName.slice(idxSlash + 1).trim();
-        // gabungkan afterSlash + spasi + beforeSlash
-        nama = afterSlash + ' ' + beforeSlash;
-      } else {
-        nama = rawName.replace(/^M1/, '').trim();
-      }
+      const beforeSlash = afterM1.substring(0, slashIndex).trim();
+      const afterSlash = afterM1.substring(slashIndex + 1).trim();
 
-      // Cek ada gelar MR/MRS (kata pertama setelah slash)
-      const afterSlashWords = nama.split(' ');
-      const gelarSet = ['MR', 'MRS', 'MR.', 'MRS.'];
-      let gelar = '';
-      if (gelarSet.includes(afterSlashWords[0].toUpperCase())) {
-        gelar = afterSlashWords[0];
-        afterSlashWords.shift();
-      }
-      // Bentuk nama akhir
-      nama = gelar ? `${gelar} ${afterSlashWords.join(' ')}` : afterSlashWords.join(' ');
+      // Nama final = afterSlash + spasi + beforeSlash
+      const nama = `${afterSlash} ${beforeSlash}`;
 
-      // Flight info
-      // flight info ada di parts[-3] dan [-2]
-      // contoh: 6591 157Y009F0051 100
-      // dari instruksi: flight info = 6591 157Y009F0051 (2 parts)
+      // Data 2 → route + maskapai code
+      // Hilangkan 2 huruf terakhir dari data2 (kode maskapai)
+      const routeNoCode = data2.slice(0, -2).replace(/ID/g, '');
+      const mid = Math.floor(routeNoCode.length / 2);
+      const route = `${routeNoCode.slice(0, mid)} → ${routeNoCode.slice(mid)}`;
 
-      // Dari contoh, sepertinya flight info di bagian kedua terakhir (parts[-2])
-      const flightInfo = parts[parts.length - 2]; // ex: 157Y009F0051
-      const flightInfoNumber = parts[parts.length - 3]; // ex: 6591
-
-      // Ambil tanggal julian dari 3 digit depan flightInfoNumber
-      // Kadang flightInfoNumber hanya angka? Ambil 4 digit dari depan flightInfoNumber
-      // Tapi dari instruksi: tanggal = 4 digit dari depan flight info yang berisi huruf dan angka, 
-      // jadi ambil dari flightInfo substring 0-4
-
-      // Dari contoh sepertinya 3 digit dari flightInfoNumber, kita coba dari flightInfoNumber (ex: 6591) = 6591 -> julian = 659, tapi itu tidak benar karena julian max 366.
-      // Jadi ambil dari flightInfo: 3 digit pertama sebagai julian date
-
-      // Dari instruksi awal, julian date adalah 4 digit dari flight info yang berisi huruf dan angka (flightInfo)
-      // flightInfo contoh: 157Y009F0051, ambil 4 digit depan: "157Y" — ini ada huruf Y, jadi kita ambil digit angka dari awal flightInfo: 157
-
-      // Ambil 3 digit angka di depan flightInfo sebagai julian date
-      const julianStr = flightInfo.match(/^(\d{3})/);
-      const julianDay = julianStr ? parseInt(julianStr[1], 10) : null;
-      const tahun = new Date().getFullYear();
-      const tanggal = julianDay ? julianToDate(julianDay, tahun) : 'Tanggal tidak valid';
-
-      // Route
-      const routeRaw = parts[parts.length - 4]; // ex: BWXCGKID atau CGKBWXIU
-      // hilangkan 2 huruf terakhir (kode maskapai)
-      const routeNoCode = routeRaw.slice(0, -2);
-
-      // hilangkan "ID" jika ada
-      const routeNoID = routeNoCode.replace(/ID/g, '');
-
-      // split tengah routeNoID (misal BWXCGK → BWX dan CGK)
-      // buat panah →
-      const mid = Math.floor(routeNoID.length / 2);
-      const rute = routeNoID.slice(0, mid) + ' → ' + routeNoID.slice(mid);
-
-      // Maskapai = 2 huruf terakhir dari routeRaw
-      const kodeMaskapai = routeRaw.slice(-2);
+      // Maskapai dari 2 huruf terakhir data2
+      const kodeMaskapai = data2.slice(-2).toUpperCase();
       let maskapai = '';
-      if (kodeMaskapai.toUpperCase() === 'UI') maskapai = 'SUPER AIR JET';
-      else if (kodeMaskapai.toUpperCase() === 'ID') maskapai = 'BATIK AIR';
+      if (kodeMaskapai === 'UI') maskapai = 'SUPER AIR JET';
+      else if (kodeMaskapai === 'ID') maskapai = 'BATIK AIR';
       else maskapai = kodeMaskapai;
 
-      // Seat = huruf ke 4 sampai 8 flightInfo
-      const seat = flightInfo.substring(3, 8);
+      // Data3 adalah flight number (kode 4 digit), yang ditampilkan sebagai seat
+      const seat = data3.substring(3, 8); // sesuai arahan sebelumnya
+
+      // Data4 adalah flight info yang mengandung tanggal Julian (3 digit pertama)
+      const julianMatch = data4.match(/^(\d{3})/);
+      const julianDay = julianMatch ? parseInt(julianMatch[1], 10) : null;
+      const tahun = new Date().getFullYear();
+      const tanggal = julianDay ? julianToDate(julianDay, tahun) : 'Tanggal tidak valid';
 
       return `
 <span>Nama</span>: ${nama}
 <span>Tanggal</span>: ${tanggal}
-<span>Route</span>: ${rute}
+<span>Route</span>: ${route}
 <span>Maskapai</span>: ${maskapai}
 <span>Seat</span>: ${seat}
       `.trim();
