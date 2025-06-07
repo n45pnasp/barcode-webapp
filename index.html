@@ -122,8 +122,13 @@
 
         const namaRaw = parts[0].substring(2);
         const [lastName, ...firstNamesArr] = namaRaw.split("/");
-        const firstNamesRaw = firstNamesArr.join(" ");
-        const firstNames = firstNamesRaw.replace(/_/g, " ");
+
+        // Filter firstNamesArr untuk hilangkan kode booking (semua huruf kapital tanpa underscore)
+        const filteredFirstNamesArr = firstNamesArr.filter(
+          (word) => /[a-z_]/.test(word)
+        );
+
+        const firstNames = filteredFirstNamesArr.join(" ").replace(/_/g, " ");
         const namaLengkap = `${firstNames} ${lastName}`.trim();
 
         const ruteMaskapai = parts[3];
@@ -161,8 +166,12 @@
 
       const namaRaw = parts[0].substring(2);
       const [lastName, ...firstNamesArr] = namaRaw.split("/");
-      const firstNamesRaw = firstNamesArr.join(" ");
-      const firstNames = firstNamesRaw.replace(/_/g, " ");
+
+      const filteredFirstNamesArr = firstNamesArr.filter(
+        (word) => /[a-z_]/.test(word)
+      );
+
+      const firstNames = filteredFirstNamesArr.join(" ").replace(/_/g, " ");
       const namaLengkap = `${firstNames} ${lastName}`.trim();
 
       const ruteMaskapai = parts[3];
