@@ -2,16 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📷 Boarding Pass Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
@@ -22,15 +18,12 @@
       padding: 20px;
       color: #333;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 16px;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
       max-width: 360px;
       border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       margin-bottom: 20px;
     }
     .card {
@@ -40,9 +33,7 @@
       margin-bottom: 16px;
       max-width: 360px;
       width: 100%;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-      word-wrap: break-word;
-      white-space: pre-line;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .label {
       font-size: 1rem;
@@ -54,57 +45,36 @@
     }
     .text {
       font-size: 1rem;
-      line-height: 1.6;
       white-space: pre-line;
+      line-height: 1.6;
+    }
+    #historyCard {
+      display: none;
     }
     button {
-      background-color: #007bff;
-      border: none;
-      color: white;
       padding: 10px 16px;
-      font-size: 1rem;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-bottom: 16px;
-      max-width: 360px;
-      width: 100%;
-      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4);
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #historyList {
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    #historyList .history-item {
-      background: #f9f9f9;
-      margin-bottom: 10px;
-      padding: 12px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      white-space: pre-line;
-      font-size: 0.95rem;
-      color: #222;
+      cursor: pointer;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-
   <h1>📷 Boarding Pass Scanner</h1>
   <video id="video" autoplay></video>
-
-  <button id="toggleHistoryBtn">Lihat History Scan ▼</button>
 
   <div class="card">
     <div class="label">📄 Informasi Boarding Pass</div>
     <div class="text" id="parsedOutput">Menunggu scan...</div>
   </div>
 
-  <div class="card" id="historyCard" style="display:none;">
-    <div class="label">📜 History Scan</div>
-    <div id="historyList"></div>
+  <button onclick="toggleHistory()">📜 Lihat Riwayat Scan</button>
+  <div class="card" id="historyCard">
+    <div class="label">🕘 Riwayat Scan</div>
+    <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -113,28 +83,20 @@
     const video = document.getElementById('video');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
-    const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
     const historyCard = document.getElementById('historyCard');
-    const historyList = document.getElementById('historyList');
+    const scanHistoryText = document.getElementById('scanHistoryText');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let lastResult = '';
-
-    // Airline code mapping
-    const airlineMap = {
-      "ID": "BATIK AIR",
-      "IU": "SUPER AIR JET",
-      "QG": "CITILINK"
-    };
 
     function playBeepTwice() {
       beepSound.play();
       setTimeout(() => beepSound.play(), 300);
     }
 
-    function julianToDate(julianDay, year) {
+    function julianToDate(julian, year) {
       const date = new Date(year, 0);
-      date.setDate(julianDay);
+      date.setDate(julian);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
@@ -145,7 +107,7 @@
       const [part6, part5, part4, part3, part2, part1] = parts;
 
       // Nama
-      const nameRaw = part1.slice(2);
+      const nameRaw = part1.slice(2); // Hapus M1
       const [last, first] = nameRaw.split('/');
       const fullName = first?.includes(' ') ? `${first} ${last}` : `${first?.replace(/_/g, ' ')} ${last}`;
 
@@ -153,87 +115,84 @@
       const julian = parseInt(part5.slice(0, 3));
       const date = julianToDate(julian, new Date().getFullYear());
 
-      // Seat
-      const seatNumber = part5.substring(4, 8);
-
       // Route
       const routeRaw = part3.slice(0, 6);
-      const origin = routeRaw.slice(0, 3);
-      const destination = routeRaw.slice(3, 6);
-      const route = `${origin} → ${destination}`;
+      const route = `${routeRaw.slice(0, 3)} → ${routeRaw.slice(3, 6)}`;
 
-      // Airline Code dari 2 huruf pertama flight code
-      const airlineCode = part4.slice(0, 2);
-      const airlineName = airlineMap[airlineCode] || airlineCode;
+      // Maskapai
+      const airlineCode = part3.slice(-2);
+      const airlineMap = {
+        "ID": "BATIK AIR",
+        "IU": "SUPER AIR JET",
+        "QG": "CITILINK",
+        "GA": "GARUDA INDONESIA",
+        "JT": "LION AIR"
+      };
+      const airline = airlineMap[airlineCode] || airlineCode;
 
-      // Flight Number
-      const flightCode = `${airlineCode} ${part4.slice(2)}`;
+      // Flight
+      const flight = `${airlineCode} ${part4}`;
 
-      // Return formatted output
+      // Seat
+      const seat = part5.slice(4, 8);
+
       return `
-✈️ Nama       : ${fullName}
-📅 Tanggal    : ${date}
-🛫 Rute       : ${route}
-🛩️ Maskapai   : ${airlineName}
-🎫 Flight     : ${flightCode}
-💺 No Kursi   : ${seatNumber}
-      `.trim();
+✈️ Nama     : ${fullName}
+🛫 Rute     : ${route}
+🛩️ Maskapai : ${airline}
+📅 Tanggal  : ${date}
+💺 No Kursi : ${seat}
+🔢 Flight   : ${flight}`.trim();
     }
 
-    function saveToHistory(text) {
-      const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
-      const timestamp = new Date().toLocaleString('id-ID');
-      history.unshift({ text, timestamp });
-      if (history.length > 50) history.pop();
-      localStorage.setItem('scanHistory', JSON.stringify(history));
-      renderHistory();
+    function saveScanToHistory(text) {
+      let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+      history.unshift(text);
+      localStorage.setItem('scanHistory', JSON.stringify(history.slice(0, 10)));
     }
 
-    function renderHistory() {
-      const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+    function loadHistory() {
+      let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
       if (history.length === 0) {
-        historyList.innerHTML = "<i>Belum ada history scan.</i>";
-        return;
+        scanHistoryText.textContent = "Belum ada riwayat.";
+      } else {
+        scanHistoryText.textContent = history.join('\n\n');
       }
-      historyList.innerHTML = history
-        .map(h => `<div class="history-item">[${h.timestamp}]\n${h.text}</div>`)
-        .join('');
     }
 
-    toggleHistoryBtn.addEventListener('click', () => {
-      if (historyCard.style.display === 'none') {
-        historyCard.style.display = 'block';
-        toggleHistoryBtn.textContent = 'Sembunyikan History Scan ▲';
-        renderHistory();
-      } else {
-        historyCard.style.display = 'none';
-        toggleHistoryBtn.textContent = 'Lihat History Scan ▼';
-      }
-    });
+    function toggleHistory() {
+      historyCard.style.display = historyCard.style.display === 'none' ? 'block' : 'none';
+      if (historyCard.style.display === 'block') loadHistory();
+    }
 
     function startCamera() {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-
-          codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-            if (result) {
-              const scannedText = result.getText();
-              if (scannedText !== lastResult) {
-                lastResult = scannedText;
-                const parsed = parseBoardingPass(scannedText);
-                parsedOutput.textContent = parsed;
-                saveToHistory(parsed);
-                playBeepTwice();
-              }
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      })
+      .then(stream => {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+          if (result) {
+            const scannedText = result.getText();
+            if (scannedText !== lastResult) {
+              lastResult = scannedText;
+              const parsed = parseBoardingPass(scannedText);
+              parsedOutput.textContent = parsed;
+              saveScanToHistory(parsed);
+              playBeepTwice();
             }
-          });
-        })
-        .catch(err => {
-          parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
+          }
         });
+      })
+      .catch(err => {
+        parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
+      });
     }
 
     startCamera();
