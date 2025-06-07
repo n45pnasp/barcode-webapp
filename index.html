@@ -116,14 +116,15 @@
         const parts = text.split(" ");
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
-        // Ambil nama lengkap dari bagian pertama, setelah "M1"
-        const namaRaw = parts[0].substring(2); // contoh: "PUTRO/NOVAN_ANDRIAN"
-        const [lastName, firstNamesRaw] = namaRaw.split("/"); // split lastName dan firstNames
-        const firstNames = firstNamesRaw.replace(/_/g, " "); // ganti underscore jadi spasi
+        // Parsing nama penumpang
+        const namaRaw = parts[0].substring(2); // "PUTRO/NOVAN_ANDRIAN"
+        const [lastName, firstNamesRaw] = namaRaw.split("/");
+        const firstNames = firstNamesRaw.replace(/_/g, " ");
+        // Gabungkan dengan urutan: nama depan + nama belakang
         const namaLengkap = `${firstNames} ${lastName}`.trim();
 
         // Parsing info penerbangan
-        const ruteMaskapai = parts[2]; // misal: "CGKBWXIU"
+        const ruteMaskapai = parts[2]; // "CGKBWXIU"
         const asal = ruteMaskapai.slice(0, 3);
         const tujuan = ruteMaskapai.slice(3, 6);
         const kodeMaskapai = ruteMaskapai.slice(6);
@@ -154,7 +155,7 @@
       const jam = waktu.toLocaleTimeString('id-ID');
 
       const parts = rawText.split(" ");
-      if (parts.length < 6) return; // skip kalau format gak lengkap
+      if (parts.length < 6) return; // skip jika format tidak lengkap
 
       const namaRaw = parts[0].substring(2);
       const [lastName, firstNamesRaw] = namaRaw.split("/");
