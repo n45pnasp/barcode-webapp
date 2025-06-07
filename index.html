@@ -9,7 +9,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: "Inter", sans-serif;
+      font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
       min-height: 100vh;
       display: flex;
@@ -90,15 +90,15 @@
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
-    const video = document.getElementById("video");
-    const parsedOutput = document.getElementById("parsedOutput");
-    const beepSound = document.getElementById("beep-sound");
-    const historyList = document.getElementById("historyList");
-    const historyContainer = document.getElementById("historyContainer");
-    const toggleHistory = document.getElementById("toggleHistory");
+    const video = document.getElementById('video');
+    const parsedOutput = document.getElementById('parsedOutput');
+    const beepSound = document.getElementById('beep-sound');
+    const historyList = document.getElementById('historyList');
+    const historyContainer = document.getElementById('historyContainer');
+    const toggleHistory = document.getElementById('toggleHistory');
 
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    let lastResult = "";
+    let lastResult = '';
 
     function playBeepTwice() {
       beepSound.play();
@@ -108,11 +108,7 @@
     function julianToDate(julianDay, year) {
       const date = new Date(year, 0);
       date.setDate(julianDay);
-      return date.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     function parseBarcode(text) {
@@ -120,23 +116,19 @@
         const parts = text.split(" ");
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
-        const namaRaw = parts[0].substring(2);
-        const [lastName, ...firstNamesArr] = namaRaw.split("/");
-
-        // Filter firstNamesArr untuk hilangkan kode booking (semua huruf kapital tanpa underscore)
-        const filteredFirstNamesArr = firstNamesArr.filter(
-          (word) => /[a-z_]/.test(word)
-        );
-
-        const firstNames = filteredFirstNamesArr.join(" ").replace(/_/g, " ");
+        // Ambil nama lengkap dari bagian pertama, setelah "M1"
+        const namaRaw = parts[0].substring(2); // contoh: "PUTRO/NOVAN_ANDRIAN"
+        const [lastName, firstNamesRaw] = namaRaw.split("/"); // split lastName dan firstNames
+        const firstNames = firstNamesRaw.replace(/_/g, " "); // ganti underscore jadi spasi
         const namaLengkap = `${firstNames} ${lastName}`.trim();
 
-        const ruteMaskapai = parts[3];
+        // Parsing info penerbangan
+        const ruteMaskapai = parts[2]; // misal: "CGKBWXIU"
         const asal = ruteMaskapai.slice(0, 3);
         const tujuan = ruteMaskapai.slice(3, 6);
         const kodeMaskapai = ruteMaskapai.slice(6);
-        const nomorPenerbangan = parts[4];
-        const infoKursi = parts[5];
+        const nomorPenerbangan = parts[3];
+        const infoKursi = parts[4];
         const julian = parseInt(infoKursi.substring(0, 3));
         const noKursi = infoKursi.substring(4, 8);
         const tahun = new Date().getFullYear();
@@ -159,24 +151,19 @@
 
     function addToHistory(rawText) {
       const waktu = new Date();
-      const jam = waktu.toLocaleTimeString("id-ID");
+      const jam = waktu.toLocaleTimeString('id-ID');
 
       const parts = rawText.split(" ");
-      if (parts.length < 6) return;
+      if (parts.length < 6) return; // skip kalau format gak lengkap
 
       const namaRaw = parts[0].substring(2);
-      const [lastName, ...firstNamesArr] = namaRaw.split("/");
-
-      const filteredFirstNamesArr = firstNamesArr.filter(
-        (word) => /[a-z_]/.test(word)
-      );
-
-      const firstNames = filteredFirstNamesArr.join(" ").replace(/_/g, " ");
+      const [lastName, firstNamesRaw] = namaRaw.split("/");
+      const firstNames = firstNamesRaw.replace(/_/g, " ");
       const namaLengkap = `${firstNames} ${lastName}`.trim();
 
-      const ruteMaskapai = parts[3];
+      const ruteMaskapai = parts[2];
       const kodeMaskapai = ruteMaskapai.slice(6);
-      const julian = parseInt(parts[5].substring(0, 3));
+      const julian = parseInt(parts[4].substring(0, 3));
       const tanggal = julianToDate(julian, new Date().getFullYear());
 
       const historyItem = document.createElement("div");
@@ -193,12 +180,11 @@
         historyContainer.style.display = "none";
         toggleHistory.textContent = "Tampilkan";
       }
-    };
+    }
 
     function startCamera() {
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream) => {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
           video.srcObject = stream;
           video.setAttribute("playsinline", true);
           video.play();
@@ -214,7 +200,7 @@
             }
           });
         })
-        .catch((err) => {
+        .catch(err => {
           parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
     }
