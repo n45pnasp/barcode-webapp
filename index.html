@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📷 Barcode Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
@@ -33,29 +37,21 @@
     .card {
       background-color: #fff;
       border-radius: 20px;
-      padding: 20px;
+      padding: 16px;
       margin-bottom: 16px;
       max-width: 360px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .label {
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
-      color: #4a4a4a;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 6px;
+      color: #666;
+      margin-bottom: 8px;
     }
     .text {
       font-size: 1rem;
       white-space: pre-line;
-      line-height: 1.6;
-    }
-    .text span {
-      font-weight: 600;
-      display: inline-block;
-      width: 130px;
     }
   </style>
 </head>
@@ -64,14 +60,20 @@
   <video id="video" autoplay></video>
 
   <div class="card">
-    <div class="label">📄 Informasi Boarding Pass</div>
-    <div class="text" id="parsedOutput">Menunggu scan...</div>
+    <div class="label">Hasil Mentah:</div>
+    <div class="text" id="rawOutput">Menunggu scan...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Hasil Parsing:</div>
+    <div class="text" id="parsedOutput">-</div>
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
     const video = document.getElementById('video');
+    const rawOutput = document.getElementById('rawOutput');
     const parsedOutput = document.getElementById('parsedOutput');
     const beepSound = document.getElementById('beep-sound');
 
@@ -84,7 +86,7 @@
     }
 
     function julianToDate(julianDay, year) {
-      const date = new Date(year, 0);
+      const date = new Date(year, 0); // Jan 1
       date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', {
         day: 'numeric',
@@ -94,31 +96,26 @@
     }
 
     function parseBarcode(text) {
-      if (text.startsWith("M1PUTRO/")) {
+      if (text.startsWith("M1PUTRO/NOVAN ANDRIAN")) {
         const parts = text.split(" ");
         const nama = "NOVAN ANDRIAN PUTRO";
-        const ruteMaskapai = parts[3];
-        const asal = ruteMaskapai.slice(0, 3);
-        const tujuan = ruteMaskapai.slice(3, 6);
-        const kodeMaskapai = ruteMaskapai.slice(6);
+        const bandaraMaskapai = parts[3];
+        const bandaraAsal = bandaraMaskapai.slice(0, 3);
+        const bandaraTujuan = bandaraMaskapai.slice(3, 6);
+        const maskapaiCode = bandaraMaskapai.slice(6);
         const nomorPenerbangan = parts[4];
-        const infoKursi = parts[5];
-        const julian = parseInt(infoKursi.substring(0, 3));
-        const noKursi = infoKursi.substring(4, 8);
+        const noKursiSource = parts[5];
+        const noKursi = noKursiSource.substring(4, 8);
+        const julianDateRaw = parts[5].substring(0, 3);
         const tahun = new Date().getFullYear();
-        const tanggal = julianToDate(julian, tahun);
+        const tanggal = julianToDate(parseInt(julianDateRaw), tahun);
 
-        let namaMaskapai = kodeMaskapai;
-        if (kodeMaskapai === "IU") namaMaskapai = "SUPER AIR JET IU";
-        else if (kodeMaskapai === "ID") namaMaskapai = "BATIK AIR ID";
+        let maskapai = maskapaiCode;
+        if (maskapaiCode === "IU") maskapai = "SUPER AIR JET IU";
+        else if (maskapaiCode === "ID") maskapai = "BATIK AIR ID";
 
-        return `
-✈️ <span>Nama</span>: ${nama}
-🛫 <span>Rute</span>: ${asal} → ${tujuan}
-🛩️ <span>Maskapai</span>: ${namaMaskapai} ${nomorPenerbangan}
-📅 <span>Tanggal</span>: ${tanggal}
-💺 <span>No Kursi</span>: ${noKursi}
-        `.trim();
+        const penerbangan = `${bandaraAsal} to ${bandaraTujuan} dengan ${maskapai} ${nomorPenerbangan}`;
+        return `✈️ Nama: ${nama}\n🛫 Penerbangan: ${penerbangan}\n📅 Tanggal: ${tanggal}\n💺 No Kursi: ${noKursi}`;
       }
       return `✅ Detected: ${text}`;
     }
@@ -134,14 +131,15 @@
               const scannedText = result.getText();
               if (scannedText !== lastResult) {
                 lastResult = scannedText;
-                parsedOutput.innerHTML = parseBarcode(scannedText);
+                rawOutput.textContent = scannedText;
+                parsedOutput.textContent = parseBarcode(scannedText);
                 playBeepTwice();
               }
             }
           });
         })
         .catch(err => {
-          parsedOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
+          rawOutput.textContent = `❌ Kamera tidak bisa diakses: ${err.message}`;
         });
     }
 
