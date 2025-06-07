@@ -7,11 +7,7 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Inter", sans-serif;
       background: linear-gradient(135deg, #f4f6f9, #e9edf2);
@@ -22,15 +18,12 @@
       padding: 20px;
       color: #333;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 16px;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; }
     video {
       width: 100%;
       max-width: 360px;
       border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       margin-bottom: 20px;
     }
     .card {
@@ -40,7 +33,7 @@
       margin-bottom: 16px;
       max-width: 360px;
       width: 100%;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .label {
       font-size: 1rem;
@@ -76,6 +69,7 @@
   </style>
 </head>
 <body>
+
   <h1>📷 Barcode Scanner</h1>
   <video id="video" autoplay></video>
 
@@ -85,8 +79,7 @@
   </div>
 
   <div class="card">
-    <div class="label">
-      📝 History Scan
+    <div class="label">📝 History Scan
       <span class="toggle-btn" id="toggleHistory">Tampilkan</span>
     </div>
     <div id="historyContainer">
@@ -94,11 +87,7 @@
     </div>
   </div>
 
-  <audio
-    id="beep-sound"
-    src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-    preload="auto"
-  ></audio>
+  <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
     const video = document.getElementById("video");
@@ -131,11 +120,11 @@
         const parts = text.split(" ");
         if (parts.length < 6) return `❌ Format barcode tidak sesuai.`;
 
-        // Hanya ambil nama dari bagian pertama (parts[0]) saja
         const namaRaw = parts[0].substring(2);
         const [lastName, ...firstNamesArr] = namaRaw.split("/");
-        const firstNamesFull = firstNamesArr.join(" ").replace(/_/g, " ");
-        const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
+        const firstNamesRaw = firstNamesArr.join(" ");
+        const firstNames = firstNamesRaw.replace(/_/g, " ");
+        const namaLengkap = `${firstNames} ${lastName}`.trim();
 
         const ruteMaskapai = parts[3];
         const asal = ruteMaskapai.slice(0, 3);
@@ -170,11 +159,11 @@
       const parts = rawText.split(" ");
       if (parts.length < 6) return;
 
-      // Ambil nama dari bagian pertama saja
       const namaRaw = parts[0].substring(2);
       const [lastName, ...firstNamesArr] = namaRaw.split("/");
-      const firstNamesFull = firstNamesArr.join(" ").replace(/_/g, " ");
-      const namaLengkap = `${firstNamesFull} ${lastName}`.trim();
+      const firstNamesRaw = firstNamesArr.join(" ");
+      const firstNames = firstNamesRaw.replace(/_/g, " ");
+      const namaLengkap = `${firstNames} ${lastName}`.trim();
 
       const ruteMaskapai = parts[3];
       const kodeMaskapai = ruteMaskapai.slice(6);
