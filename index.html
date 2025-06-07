@@ -82,9 +82,22 @@
       setTimeout(() => beepSound.play(), 300);
     }
 
-    // Konversi Julian Day + tahun ke tanggal lengkap (dd MMMM yyyy)
+    // Split spasi dari belakang, max split 5 agar dapat 6 parts total
+    function splitFromBack(str, maxSplit) {
+      const parts = [];
+      let remaining = str.trim();
+      for (let i = 0; i < maxSplit; i++) {
+        const lastSpace = remaining.lastIndexOf(' ');
+        if (lastSpace === -1) break;
+        parts.unshift(remaining.substring(lastSpace + 1));
+        remaining = remaining.substring(0, lastSpace);
+      }
+      parts.unshift(remaining);
+      return parts;
+    }
+
     function julianToDate(julianDay, year) {
-      const date = new Date(year, 0, 1); // 1 Jan tahun tersebut
+      const date = new Date(year, 0, 1);
       date.setDate(julianDay);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     }
@@ -92,39 +105,41 @@
     function parseBoardingPass(data) {
       if (!data.startsWith("M1")) return "❌ Format barcode tidak dikenali.";
 
-      // Split berdasarkan spasi, ambil 6 bagian saja
-      const parts = data.split(' ').slice(0, 6);
+      const parts = splitFromBack(data, 5);
       if (parts.length < 6) return "⚠️ Data tidak lengkap.";
 
       // 1. Nama
-      const namaRaw = parts[0].substring(2); // hapus "M1"
-      const [part1, part2] = namaRaw.split("/");
-      const fullName = `${part2} ${part1}`.replace(/_/g, ' ').trim();
+      const namaRaw = parts[0].substring(2); // hapus M1
+      const slashIndex = namaRaw.indexOf('/');
+      let fullName = "";
+      if (slashIndex === -1) {
+        fullName = namaRaw.replace(/_/g, ' ').trim();
+      } else {
+        const part1 = namaRaw.substring(0, slashIndex);
+        const part2 = namaRaw.substring(slashIndex + 1);
+        fullName = (part2 + " " + part1).replace(/_/g, ' ').trim();
+      }
 
-      // 2. Tanggal (Julian date + tahun)
+      // 2. Tanggal (4 huruf dari part 5)
       const tanggalRaw = parts[4].substring(0, 4);
-      // Julian day = 3 digit angka, tahun = 4th char
       const julianDay = parseInt(tanggalRaw.substring(0, 3), 10);
-      const yearChar = tanggalRaw.charAt(3);
-      // Tahun: jika Y berarti 2025 (sesuaikan bila perlu)
-      const year = (yearChar === 'Y') ? 2025 : 2025; // Bisa ditambah logika lain
-
+      // Tahun set default 2025, bisa disesuaikan jika ada logika lebih kompleks
+      const year = 2025;
       const tanggal = julianToDate(julianDay, year);
 
-      // 3. Route (dari part 3, ambil 6 huruf depan, split 3-3)
+      // 3. Route (6 huruf dari depan part 3)
       const routeRaw = parts[2].substring(0, 6);
-      const routeOri = routeRaw.substring(0,3);
-      const routeDest = routeRaw.substring(3,6);
+      const routeOri = routeRaw.substring(0, 3);
+      const routeDest = routeRaw.substring(3, 6);
       const route = `${routeOri} → ${routeDest}`;
 
       // 4. Maskapai (2 huruf terakhir part 3)
       const maskapaiCode = parts[2].slice(-2);
       const maskapaiName = airlineMap[maskapaiCode] || maskapaiCode;
 
-      // 5. Seat (huruf ke 5 sampai 8 part 5, index 4-7)
+      // 5. Seat (huruf ke 5 sampai 8 part 5)
       const seat = parts[4].substring(4, 8);
 
-      // Buat output rapih
       return `✈️ Nama         : ${fullName}
 🛫 Rute         : ${route}
 🛩️ Maskapai     : ${maskapaiName} (${maskapaiCode})
