@@ -118,13 +118,14 @@
           return "⚠️ Format tidak dikenali atau data tidak lengkap.";
         }
 
-        const namaRaw = parts[0].substring(2); // "M1" dihapus
-        const nama = namaRaw.replace("/", " ");
+        const namaRaw = parts[0].substring(2); // Hapus "M1"
+        const [lastName, firstNames] = namaRaw.split("/");
+        const namaLengkap = `${firstNames?.replace(/_/g, " ")} ${lastName}`;
 
         const bandaraMaskapai = parts[3];
-        const bandaraAsal = bandaraMaskapai.slice(0, 3);
-        const bandaraTujuan = bandaraMaskapai.slice(3, 6);
-        const maskapaiCode = bandaraMaskapai.slice(6);
+        const asal = bandaraMaskapai.slice(0, 3);
+        const tujuan = bandaraMaskapai.slice(3, 6);
+        const kodeMaskapai = bandaraMaskapai.slice(6);
 
         const nomorPenerbangan = parts[4];
         const noKursiSource = parts[5];
@@ -141,7 +142,7 @@
           "QG": "CITILINK QG"
         };
 
-        const maskapai = maskapaiMap[maskapaiCode] || maskapaiCode;
+        const namaMaskapai = maskapaiMap[kodeMaskapai] || kodeMaskapai;
 
         return `
 ✈️ <span>Nama</span>: ${namaLengkap}
@@ -153,7 +154,7 @@
       }
       return `✅ Detected: ${text}`;
     }
-    
+
     function addToHistory(rawText) {
       const waktu = new Date();
       const jam = waktu.toLocaleTimeString('id-ID');
@@ -161,7 +162,7 @@
       const namaEndIndex = rawText.indexOf(" ", 2);
       const namaRaw = rawText.substring(2, namaEndIndex);
       const [lastName, firstNames] = namaRaw.split("/");
-      const namaLengkap = `${firstNames.replace(/_/g, " ")} ${lastName}`;
+      const namaLengkap = `${firstNames?.replace(/_/g, " ")} ${lastName}`;
 
       const parts = rawText.split(" ");
       const ruteMaskapai = parts[3];
