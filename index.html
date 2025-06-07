@@ -15,17 +15,27 @@
       padding: 20px;
       color: #333;
       transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 420px;
+      width: 100%;
     }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      width: 100%;
       margin-bottom: 16px;
     }
     h1 { font-size: 1.5rem; }
     video {
       width: 100%;
-      max-width: 360px;
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       margin-bottom: 20px;
@@ -35,7 +45,6 @@
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 16px;
-      max-width: 360px;
       width: 100%;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
       transition: background-color 0.3s ease;
@@ -57,6 +66,7 @@
       display: flex;
       gap: 10px;
       margin-bottom: 16px;
+      width: 100%;
     }
     .btn {
       background: #4a90e2;
@@ -107,26 +117,30 @@
 </head>
 <body>
 
-  <div class="header">
-    <h1>📷 Boarding Pass Scanner</h1>
-    <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()">🌙</button>
-  </div>
+  <div class="container">
 
-  <video id="video" autoplay></video>
+    <div class="header">
+      <h1>📷 Boarding Pass Scanner</h1>
+      <button id="darkModeBtn" class="dark-toggle-btn" onclick="toggleDarkMode()">🌙</button>
+    </div>
 
-  <div class="card">
-    <div class="label">📄 Informasi Boarding Pass</div>
-    <div class="text" id="parsedOutput">Menunggu scan...</div>
-  </div>
+    <video id="video" autoplay></video>
 
-  <div class="button-row">
-    <button class="btn" onclick="toggleHistory()">📚 Riwayat</button>
-    <button class="btn" onclick="clearHistory()">🗑️ Hapus</button>
-  </div>
+    <div class="card">
+      <div class="label">📄 Informasi Boarding Pass</div>
+      <div class="text" id="parsedOutput">Menunggu scan...</div>
+    </div>
 
-  <div class="card" id="historyCard">
-    <div class="label">📜 Riwayat Scan</div>
-    <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
+    <div class="button-row">
+      <button class="btn" onclick="toggleHistory()">📚 Riwayat</button>
+      <button class="btn" onclick="clearHistory()">🗑️ Hapus</button>
+    </div>
+
+    <div class="card" id="historyCard">
+      <div class="label">📜 Riwayat Scan</div>
+      <div class="text" id="scanHistoryText">Belum ada riwayat.</div>
+    </div>
+
   </div>
 
   <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
